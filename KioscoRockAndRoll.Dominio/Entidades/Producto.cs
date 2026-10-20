@@ -20,6 +20,12 @@ public class Producto
 
     public int StockMinimo { get; private set; }
 
+    /// <summary>Categoría del producto, o null si no tiene.</summary>
+    public long? CategoriaId { get; private set; }
+
+    /// <summary>Proveedor habitual del producto, o null si no tiene.</summary>
+    public long? ProveedorId { get; private set; }
+
     public Producto(string codigoBarras, string nombre, decimal precioCosto, decimal precioVenta,
         int stock = 0, int stockMinimo = 0)
     {
@@ -31,10 +37,11 @@ public class Producto
 
     /// <summary>Reconstruye un producto ya guardado. Lo usa la capa de datos.</summary>
     public static Producto Restaurar(long id, string codigoBarras, string nombre, decimal precioCosto,
-        decimal precioVenta, int stock, int stockMinimo)
+        decimal precioVenta, int stock, int stockMinimo, long? categoriaId = null, long? proveedorId = null)
     {
         var producto = new Producto(codigoBarras, nombre, precioCosto, precioVenta, 0, stockMinimo) { Id = id };
         producto.Stock = stock;
+        producto.Clasificar(categoriaId, proveedorId);
         return producto;
     }
 
@@ -72,6 +79,15 @@ public class Producto
         PrecioCosto = precioCosto;
         PrecioVenta = precioVenta;
         StockMinimo = stockMinimo;
+    }
+
+    /// <summary>Asigna categoría y proveedor (null = ninguno).</summary>
+    public void Clasificar(long? categoriaId, long? proveedorId)
+    {
+        if (categoriaId <= 0 || proveedorId <= 0)
+            throw new ArgumentOutOfRangeException(categoriaId <= 0 ? nameof(categoriaId) : nameof(proveedorId));
+        CategoriaId = categoriaId;
+        ProveedorId = proveedorId;
     }
 
     public void AjustarPrecios(AjustePrecios ajuste)

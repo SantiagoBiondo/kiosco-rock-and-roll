@@ -1,3 +1,4 @@
+using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Repositorios;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,6 +13,8 @@ public static class RegistroDeServicios
         servicios.AddSingleton<InicializadorBaseDeDatos>();
         servicios.AddSingleton<IProductoRepositorio, SqliteProductoRepositorio>();
         servicios.AddSingleton<IVentaRepositorio, SqliteVentaRepositorio>();
+        servicios.AddSingleton<ICatalogoRepositorio<Categoria>, SqliteCategoriaRepositorio>();
+        servicios.AddSingleton<ICatalogoRepositorio<Proveedor>, SqliteProveedorRepositorio>();
         return servicios;
     }
 }

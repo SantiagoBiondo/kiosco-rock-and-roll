@@ -11,6 +11,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
     public class EditorProducto : UserControl
     {
         private readonly InventarioServicio _inventario;
+        private readonly CatalogoServicio<Categoria> _categorias;
+        private readonly CatalogoServicio<Proveedor> _proveedores;
         private long? _idEnEdicion;
 
         private readonly Label lblTitulo = Estilos.Etiqueta("", Estilos.Titulo);
@@ -20,6 +22,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         private readonly NumericUpDown numVenta = Estilos.CampoNumero(2);
         private readonly NumericUpDown numStock = Estilos.CampoNumero(0, 1_000_000);
         private readonly NumericUpDown numMinimo = Estilos.CampoNumero(0, 1_000_000);
+        private readonly ComboBox cmbCategoria = Estilos.Opciones<Opcion<long?>>([], o => o.Texto, 220);
+        private readonly ComboBox cmbProveedor = Estilos.Opciones<Opcion<long?>>([], o => o.Texto, 220);
         private readonly Label lblMargen = Estilos.Etiqueta("");
         private readonly Label lblError = new() { AutoSize = true, ForeColor = Color.Red, MaximumSize = new Size(400, 0) };
 
@@ -28,9 +32,12 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
         public event EventHandler? Cancelado;
 
-        public EditorProducto(InventarioServicio inventario)
+        public EditorProducto(InventarioServicio inventario,
+            CatalogoServicio<Categoria> categorias, CatalogoServicio<Proveedor> proveedores)
         {
             _inventario = inventario;
+            _categorias = categorias;
+            _proveedores = proveedores;
             Font = Estilos.Normal;
 
             var tabla = new TableLayoutPanel { ColumnCount = 2, AutoSize = true, Dock = DockStyle.Top };
@@ -43,6 +50,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             AgregarFila(tabla, "", lblMargen);
             AgregarFila(tabla, "Stock actual", numStock);
             AgregarFila(tabla, "Stock mínimo", numMinimo);
+            AgregarFila(tabla, "Categoría", cmbCategoria);
+            AgregarFila(tabla, "Proveedor", cmbProveedor);
 
             var botones = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0, 12, 0, 0) };
             botones.Controls.Add(Estilos.Boton("Guardar (Enter)", (_, _) => Guardar(), 160));
@@ -65,7 +74,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         {
             _idEnEdicion = null;
             lblTitulo.Text = "Nuevo producto";
-            Cargar("", "", 0, 0, stockInicial, 0);
+            Cargar("", "", 0, 0, stockInicial, 0, null, null);
             txtCodigo.Text = codigoBarras;
         }
 
@@ -74,7 +83,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             _idEnEdicion = producto.Id;
             lblTitulo.Text = "Editar producto";
             Cargar(producto.CodigoBarras, producto.Nombre, producto.PrecioCosto, producto.PrecioVenta,
-                Math.Max(0, producto.Stock), producto.StockMinimo);
+                Math.Max(0, producto.Stock), producto.StockMinimo, producto.CategoriaId, producto.ProveedorId);
         }
 
         /// <summary>Pone el cursor en el primer campo que falta completar.</summary>
@@ -95,7 +104,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        private void Cargar(string codigo, string nombre, decimal costo, decimal venta, int stock, int minimo)
+        private void Cargar(string codigo, string nombre, decimal costo, decimal venta, int stock, int minimo,
+            long? categoriaId, long? proveedorId)
         {
             txtCodigo.Text = codigo;
             txtNombre.Text = nombre;
@@ -103,6 +113,13 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             numVenta.Value = venta;
             numStock.Value = Math.Min(stock, (int)numStock.Maximum);
             numMinimo.Value = minimo;
+
+            // Las listas se recargan cada vez, por si se agregaron categorías o proveedores.
+            Estilos.CambiarOpciones(cmbCategoria, OpcionesDeCatalogo.ParaAsignar(_categorias.Listar(), "(sin categoría)"));
+            Estilos.CambiarOpciones(cmbProveedor, OpcionesDeCatalogo.ParaAsignar(_proveedores.Listar(), "(sin proveedor)"));
+            Estilos.Elegir<Opcion<long?>>(cmbCategoria, o => o.Valor == categoriaId);
+            Estilos.Elegir<Opcion<long?>>(cmbProveedor, o => o.Valor == proveedorId);
+
             lblError.Text = "";
             ActualizarMargen();
         }
@@ -131,7 +148,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         private void Guardar()
         {
             var datos = new DatosProducto(
-                txtCodigo.Text, txtNombre.Text, numCosto.Value, numVenta.Value, (int)numStock.Value, (int)numMinimo.Value);
+                txtCodigo.Text, txtNombre.Text, numCosto.Value, numVenta.Value, (int)numStock.Value, (int)numMinimo.Value,
+                ((Opcion<long?>)cmbCategoria.SelectedItem!).Valor, ((Opcion<long?>)cmbProveedor.SelectedItem!).Valor);
 
             try
             {

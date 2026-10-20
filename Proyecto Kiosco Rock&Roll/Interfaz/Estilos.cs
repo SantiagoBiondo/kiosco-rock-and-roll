@@ -90,6 +90,25 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
             return combo;
         }
 
+        /// <summary>Reemplaza las opciones de una lista creada con <see cref="Opciones"/>.</summary>
+        public static void CambiarOpciones<T>(ComboBox combo, IEnumerable<T> opciones) =>
+            combo.DataSource = opciones.ToList();
+
+        /// <summary>Elige la primera opción que cumpla la condición (o la primera de todas si ninguna cumple).</summary>
+        public static void Elegir<T>(ComboBox combo, Func<T, bool> condicion)
+        {
+            for (var i = 0; i < combo.Items.Count; i++)
+            {
+                if (condicion((T)combo.Items[i]!))
+                {
+                    combo.SelectedIndex = i;
+                    return;
+                }
+            }
+            if (combo.Items.Count > 0)
+                combo.SelectedIndex = 0;
+        }
+
         /// <summary>
         /// Lee lo que está escrito en el campo aunque todavía no se haya confirmado
         /// (Value recién se actualiza al salir del campo).

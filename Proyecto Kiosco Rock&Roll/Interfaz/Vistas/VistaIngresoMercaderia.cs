@@ -19,10 +19,10 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
         private readonly ListBox lstIngresos = new() { Dock = DockStyle.Fill, Font = Estilos.Normal, IntegralHeight = false };
         private readonly Label lblEstado = new() { Dock = DockStyle.Bottom, AutoSize = false, Height = 36, Padding = new Padding(6), Font = Estilos.Normal };
 
-        public VistaIngresoMercaderia(InventarioServicio inventario)
+        public VistaIngresoMercaderia(InventarioServicio inventario, EditorProducto editor)
         {
             _inventario = inventario;
-            editor = new EditorProducto(inventario);
+            this.editor = editor;
 
             numCantidad.Minimum = 1;
             numCantidad.Value = 1;

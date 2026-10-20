@@ -26,12 +26,13 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
         private readonly Label lblTotal = new() { Font = Estilos.Total, AutoSize = true };
         private readonly Label lblEstado = new() { AutoSize = true, Font = Estilos.Normal, Anchor = AnchorStyles.Left };
 
-        public VistaVenta(InventarioServicio inventario, VentaServicio ventas)
+        public VistaVenta(InventarioServicio inventario, VentaServicio ventas,
+            BuscadorProducto buscador, EditorProducto editor)
         {
             _inventario = inventario;
             _ventas = ventas;
-            buscador = new BuscadorProducto(inventario);
-            editor = new EditorProducto(inventario);
+            this.buscador = buscador;
+            this.editor = editor;
 
             // Zona de escaneo.
             var escaneo = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6) };

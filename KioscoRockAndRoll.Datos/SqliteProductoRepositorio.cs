@@ -8,7 +8,8 @@ namespace KioscoRockAndRoll.Datos;
 public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProductoRepositorio
 {
     private const string SelectProductos = """
-        SELECT Id, CodigoBarras, Nombre, PrecioCostoCentavos, PrecioVentaCentavos, Stock, StockMinimo
+        SELECT Id, CodigoBarras, Nombre, PrecioCostoCentavos, PrecioVentaCentavos, Stock, StockMinimo,
+               CategoriaId, ProveedorId
         FROM Productos
         """;
 
@@ -42,8 +43,9 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
         using var db = conexion.Abrir();
         using var comando = db.CreateCommand();
         comando.CommandText = """
-            INSERT INTO Productos (CodigoBarras, Nombre, PrecioCostoCentavos, PrecioVentaCentavos, Stock, StockMinimo)
-            VALUES ($codigo, $nombre, $costo, $venta, $stock, $minimo)
+            INSERT INTO Productos (CodigoBarras, Nombre, PrecioCostoCentavos, PrecioVentaCentavos, Stock, StockMinimo,
+                                   CategoriaId, ProveedorId)
+            VALUES ($codigo, $nombre, $costo, $venta, $stock, $minimo, $categoria, $proveedor)
             RETURNING Id
             """;
         CargarParametros(comando, producto);
@@ -60,7 +62,8 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
         comando.CommandText = """
             UPDATE Productos
             SET CodigoBarras = $codigo, Nombre = $nombre, PrecioCostoCentavos = $costo,
-                PrecioVentaCentavos = $venta, Stock = $stock, StockMinimo = $minimo
+                PrecioVentaCentavos = $venta, Stock = $stock, StockMinimo = $minimo,
+                CategoriaId = $categoria, ProveedorId = $proveedor
             WHERE Id = $id
             """;
 
@@ -112,6 +115,8 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
         comando.Parameters.AddWithValue("$venta", ACentavos(producto.PrecioVenta));
         comando.Parameters.AddWithValue("$stock", producto.Stock);
         comando.Parameters.AddWithValue("$minimo", producto.StockMinimo);
+        comando.Parameters.AddWithValue("$categoria", (object?)producto.CategoriaId ?? DBNull.Value);
+        comando.Parameters.AddWithValue("$proveedor", (object?)producto.ProveedorId ?? DBNull.Value);
     }
 
     private static Producto Leer(SqliteDataReader lector) => Producto.Restaurar(
@@ -121,7 +126,9 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
         precioCosto: DeCentavos(lector.GetInt64(3)),
         precioVenta: DeCentavos(lector.GetInt64(4)),
         stock: lector.GetInt32(5),
-        stockMinimo: lector.GetInt32(6));
+        stockMinimo: lector.GetInt32(6),
+        categoriaId: lector.IsDBNull(7) ? null : lector.GetInt64(7),
+        proveedorId: lector.IsDBNull(8) ? null : lector.GetInt64(8));
 
     private static string EscaparLike(string texto) =>
         texto.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_");

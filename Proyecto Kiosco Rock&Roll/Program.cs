@@ -1,8 +1,10 @@
 using KioscoRockAndRoll.Datos;
 using KioscoRockAndRoll.Dominio;
+using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
 using Microsoft.Extensions.DependencyInjection;
 using Proyecto_Kiosco_Rock_Roll.Interfaz;
+using Proyecto_Kiosco_Rock_Roll.Interfaz.Controles;
 using Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas;
 
 namespace Proyecto_Kiosco_Rock_Roll
@@ -36,6 +38,16 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddSingleton(TimeProvider.System);
             servicios.AddSingleton<InventarioServicio>();
             servicios.AddSingleton<VentaServicio>();
+            servicios.AddSingleton<CatalogoServicio<Categoria>>();
+            servicios.AddSingleton<CatalogoServicio<Proveedor>>();
+
+            // Controles que usan varias vistas: cada vista recibe su propia instancia.
+            servicios.AddTransient<EditorProducto>();
+            servicios.AddTransient<BuscadorProducto>();
+            servicios.AddTransient<PanelAjustePrecios>();
+            servicios.AddTransient<PanelCategorias>();
+            servicios.AddTransient<PanelProveedores>();
+            servicios.AddTransient<PanelPedido>();
 
             // Una sola ventana con una instancia de cada vista durante toda la ejecución.
             servicios.AddSingleton<FormPrincipal>();

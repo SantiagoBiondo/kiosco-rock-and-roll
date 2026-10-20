@@ -5,7 +5,8 @@ namespace KioscoRockAndRoll.Dominio.Servicios;
 
 /// <summary>Datos que se cargan en el formulario de alta/edición de un producto.</summary>
 public sealed record DatosProducto(
-    string CodigoBarras, string Nombre, decimal PrecioCosto, decimal PrecioVenta, int Stock, int StockMinimo);
+    string CodigoBarras, string Nombre, decimal PrecioCosto, decimal PrecioVenta, int Stock, int StockMinimo,
+    long? CategoriaId = null, long? ProveedorId = null);
 
 /// <summary>Casos de uso del inventario: alta, edición, baja e ingreso de mercadería.</summary>
 public class InventarioServicio(IProductoRepositorio productos)
@@ -20,12 +21,24 @@ public class InventarioServicio(IProductoRepositorio productos)
         return soloStockBajo ? resultado.Where(p => p.StockBajo).ToList() : resultado;
     }
 
+    public IReadOnlyList<Producto> Buscar(FiltroProductos filtro) =>
+        productos.Buscar(filtro.Texto ?? "").Where(filtro.Acepta).ToList();
+
+    /// <summary>Lo que hay que pedirle a un proveedor: sus productos con stock bajo.</summary>
+    public PedidoAProveedor ArmarPedido(Proveedor proveedor) =>
+        PedidoAProveedor.Armar(proveedor, Buscar(new FiltroProductos
+        {
+            SoloStockBajo = true,
+            Proveedor = FiltroClasificacion.Solo(proveedor.Id)
+        }));
+
     public Producto Crear(DatosProducto datos)
     {
         ValidarCodigoLibre(datos.CodigoBarras, idActual: null);
 
         var producto = new Producto(datos.CodigoBarras, datos.Nombre, datos.PrecioCosto, datos.PrecioVenta,
             datos.Stock, datos.StockMinimo);
+        producto.Clasificar(datos.CategoriaId, datos.ProveedorId);
         productos.Agregar(producto);
         return producto;
     }
@@ -38,6 +51,7 @@ public class InventarioServicio(IProductoRepositorio productos)
 
         producto.ActualizarDatos(datos.CodigoBarras, datos.Nombre, datos.PrecioCosto, datos.PrecioVenta, datos.StockMinimo);
         producto.AjustarStock(datos.Stock);
+        producto.Clasificar(datos.CategoriaId, datos.ProveedorId);
         productos.Actualizar(producto);
         return producto;
     }
