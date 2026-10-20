@@ -1,9 +1,8 @@
-using System.Globalization;
 using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using static KioscoRockAndRoll.Reportes.EstiloPdf;
 
 namespace KioscoRockAndRoll.Reportes;
 
@@ -12,11 +11,6 @@ namespace KioscoRockAndRoll.Reportes;
 /// </summary>
 public sealed class ReporteVentasDelDia(DatosDelDia datos, string nombreNegocio, DateTime generadoEn) : IDocument
 {
-    private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-AR");
-    private static readonly string ColorTitulos = Colors.Grey.Darken3;
-    private static readonly string ColorSuave = Colors.Grey.Darken1;
-    private static readonly string ColorLinea = Colors.Grey.Lighten2;
-
     public DocumentMetadata GetMetadata() => new()
     {
         Title = $"Ventas del {datos.Dia:dd/MM/yyyy}",
@@ -24,43 +18,15 @@ public sealed class ReporteVentasDelDia(DatosDelDia datos, string nombreNegocio,
         CreationDate = generadoEn
     };
 
-    public void Compose(IDocumentContainer container)
-    {
-        container.Page(pagina =>
-        {
-            pagina.Size(PageSizes.A4);
-            pagina.Margin(1.5f, Unit.Centimetre);
-            pagina.DefaultTextStyle(estilo => estilo.FontSize(10));
-
-            pagina.Header().Element(Encabezado);
-            pagina.Content().PaddingVertical(12).Column(columna =>
+    public void Compose(IDocumentContainer container) =>
+        Pagina(container, nombreNegocio, $"Ventas del {datos.Dia.ToString("dddd d 'de' MMMM 'de' yyyy", Cultura)}", generadoEn,
+            columna =>
             {
-                columna.Spacing(18);
                 columna.Item().Element(Resumen);
                 columna.Item().Element(Turnos);
                 columna.Item().Element(Productos);
                 columna.Item().Element(DetalleDeVentas);
             });
-            pagina.Footer().AlignCenter().Text(texto =>
-            {
-                texto.DefaultTextStyle(estilo => estilo.FontSize(8).FontColor(ColorSuave));
-                texto.Span($"Generado el {generadoEn.ToString("dd/MM/yyyy HH:mm", Cultura)}  ·  Página ");
-                texto.CurrentPageNumber();
-                texto.Span(" de ");
-                texto.TotalPages();
-            });
-        });
-    }
-
-    private void Encabezado(IContainer contenedor)
-    {
-        var fecha = datos.Dia.ToString("dddd d 'de' MMMM 'de' yyyy", Cultura);
-        contenedor.BorderBottom(1).BorderColor(ColorLinea).PaddingBottom(6).Column(columna =>
-        {
-            columna.Item().Text(nombreNegocio).FontSize(18).Bold().FontColor(ColorTitulos);
-            columna.Item().Text($"Ventas del {fecha}").FontSize(12);
-        });
-    }
 
     private void Resumen(IContainer contenedor)
     {
@@ -194,11 +160,11 @@ public sealed class ReporteVentasDelDia(DatosDelDia datos, string nombreNegocio,
                     var medio = venta.Anulada
                         ? $"{venta.MedioDePagoDescripcion} — ANULADA: {venta.MotivoAnulacion}"
                         : venta.MedioDePagoDescripcion;
-                    Celda(tabla.Cell(), venta.Id.ToString(Cultura), venta.Anulada);
-                    Celda(tabla.Cell(), venta.Fecha.ToString("HH:mm", Cultura), venta.Anulada);
-                    Celda(tabla.Cell(), medio, venta.Anulada);
-                    Celda(tabla.Cell(), venta.Unidades.ToString("N0", Cultura), venta.Anulada, derecha: true);
-                    Celda(tabla.Cell(), Plata(venta.Total), venta.Anulada, derecha: true);
+                    CeldaDeVenta(tabla.Cell(), venta.Id.ToString(Cultura), venta.Anulada);
+                    CeldaDeVenta(tabla.Cell(), venta.Fecha.ToString("HH:mm", Cultura), venta.Anulada);
+                    CeldaDeVenta(tabla.Cell(), medio, venta.Anulada);
+                    CeldaDeVenta(tabla.Cell(), venta.Unidades.ToString("N0", Cultura), venta.Anulada, derecha: true);
+                    CeldaDeVenta(tabla.Cell(), Plata(venta.Total), venta.Anulada, derecha: true);
                 }
             });
             if (datos.Ventas.CantidadAnuladas > 0)
@@ -206,47 +172,10 @@ public sealed class ReporteVentasDelDia(DatosDelDia datos, string nombreNegocio,
         });
     }
 
-    // ---------- Piezas reutilizables ----------
-
-    private static string Plata(decimal monto) => monto.ToString("C2", Cultura);
-
-    private static Action<IContainer> Titulo(string texto) => contenedor =>
-        contenedor.PaddingBottom(6).Text(texto).FontSize(13).Bold().FontColor(ColorTitulos);
-
-    private static Action<IContainer> Dato(string etiqueta, string valor, bool destacado = false) => contenedor =>
-        contenedor.Column(columna =>
-        {
-            columna.Item().Text(etiqueta).FontSize(9).FontColor(ColorSuave);
-            var texto = columna.Item().Text(valor).FontSize(destacado ? 16 : 13);
-            if (destacado)
-                texto.Bold();
-        });
-
-    private static void Fila(TableDescriptor tabla, string concepto, string valor, bool negrita = false)
+    private static void CeldaDeVenta(IContainer celda, string texto, bool anulada, bool derecha = false)
     {
-        var izquierda = tabla.Cell().PaddingVertical(1).Text(concepto);
-        var derecha = tabla.Cell().PaddingVertical(1).AlignRight().Text(valor);
-        if (negrita)
-        {
-            izquierda.Bold();
-            derecha.Bold();
-        }
-    }
-
-    // La alineación va después del borde: si se aplicara antes, la celda se achicaría
-    // al ancho del texto y la línea de abajo quedaría cortada.
-    private static void Encabezado(IContainer celda, string texto, bool derecha = false) =>
-        Alinear(celda.BorderBottom(1).BorderColor(Colors.Grey.Medium).PaddingVertical(3).PaddingHorizontal(3), derecha)
-            .Text(texto).Bold();
-
-    private static void Celda(IContainer celda, string texto, bool anulada = false, bool derecha = false)
-    {
-        var contenido = Alinear(celda.BorderBottom(0.5f).BorderColor(ColorLinea).PaddingVertical(3).PaddingHorizontal(3), derecha)
-            .Text(texto);
+        var contenido = Celda(celda, texto, derecha);
         if (anulada)
             contenido.Strikethrough().FontColor(ColorSuave);
     }
-
-    private static IContainer Alinear(IContainer contenedor, bool derecha) =>
-        derecha ? contenedor.AlignRight() : contenedor.AlignLeft();
 }

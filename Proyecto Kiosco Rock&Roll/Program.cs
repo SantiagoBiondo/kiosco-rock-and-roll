@@ -41,6 +41,7 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddSingleton<VentaServicio>();
             servicios.AddSingleton<CajaServicio>();
             servicios.AddSingleton<ReporteDelDiaServicio>();
+            servicios.AddSingleton<ReporteDeVentasServicio>();
             servicios.AddSingleton<ExportadorDeReportes>();
             servicios.AddSingleton<CatalogoServicio<Categoria>>();
             servicios.AddSingleton<CatalogoServicio<Proveedor>>();
@@ -64,6 +65,7 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddSingleton<VistaInventario>();
             servicios.AddSingleton<VistaIngresoMercaderia>();
             servicios.AddSingleton<VistaCaja>();
+            servicios.AddSingleton<VistaReportes>();
             servicios.AddSingleton<VistaBackups>();
             return servicios;
         }

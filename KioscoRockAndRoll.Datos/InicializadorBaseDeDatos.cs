@@ -107,6 +107,16 @@ public sealed class InicializadorBaseDeDatos(ConexionSqlite conexion, GestorDeBa
         """
         ALTER TABLE Ventas ADD COLUMN AnuladaEn TEXT;
         ALTER TABLE Ventas ADD COLUMN MotivoAnulacion TEXT;
+        """,
+
+        // 6: costo de cada renglón al momento de vender, para calcular la ganancia real.
+        // Para las ventas anteriores no se sabe: se usa el costo actual del producto como estimación.
+        """
+        ALTER TABLE VentaLineas ADD COLUMN CostoUnitarioCentavos INTEGER NOT NULL DEFAULT 0;
+
+        UPDATE VentaLineas
+        SET CostoUnitarioCentavos = COALESCE(
+            (SELECT p.PrecioCostoCentavos FROM Productos p WHERE p.Id = VentaLineas.ProductoId), 0);
         """
     ];
 

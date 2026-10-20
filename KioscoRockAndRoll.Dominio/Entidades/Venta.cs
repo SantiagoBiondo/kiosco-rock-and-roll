@@ -1,9 +1,13 @@
 namespace KioscoRockAndRoll.Dominio.Entidades;
 
-/// <summary>Un renglón de una venta ya cobrada. Guarda el precio al momento de vender.</summary>
-public sealed record LineaVenta(long ProductoId, string NombreProducto, int Cantidad, decimal PrecioUnitario)
+/// <summary>
+/// Un renglón de una venta ya cobrada. Guarda el precio y el costo al momento de vender,
+/// así los reportes de ganancia no cambian cuando después se actualizan los precios.
+/// </summary>
+public sealed record LineaVenta(long ProductoId, string NombreProducto, int Cantidad, decimal PrecioUnitario, decimal CostoUnitario = 0)
 {
     public decimal Subtotal => Cantidad * PrecioUnitario;
+    public decimal CostoTotal => Cantidad * CostoUnitario;
 }
 
 /// <summary>Una venta ya cobrada. Es inmutable: una vez hecha, no se modifica.</summary>
@@ -42,7 +46,7 @@ public sealed class Venta
             throw new InvalidOperationException("El cobro no corresponde al total del carrito.");
 
         var lineas = carrito.Items
-            .Select(i => new LineaVenta(i.Producto.Id, i.Producto.Nombre, i.Cantidad, i.PrecioUnitario))
+            .Select(i => new LineaVenta(i.Producto.Id, i.Producto.Nombre, i.Cantidad, i.PrecioUnitario, i.Producto.PrecioCosto))
             .ToList();
         return new Venta(0, turno.Id, fecha, cobro.Medio, lineas);
     }

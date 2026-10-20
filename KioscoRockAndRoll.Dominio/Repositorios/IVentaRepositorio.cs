@@ -16,6 +16,12 @@ public interface IVentaRepositorio
     /// <summary>Unidades y recaudación por producto en el día, sin ventas anuladas, de mayor a menor recaudación.</summary>
     IReadOnlyList<ProductoVendido> ProductosVendidosDelDia(DateOnly dia);
 
+    /// <summary>Ventas, vendido y costo de cada día del período que tuvo ventas (sin anuladas).</summary>
+    IReadOnlyList<VentasDeUnDia> TotalesPorDia(PeriodoReporte periodo);
+
+    /// <summary>Unidades, vendido y costo de cada producto en el período (sin anuladas).</summary>
+    IReadOnlyList<RendimientoProducto> RendimientoPorProducto(PeriodoReporte periodo);
+
     /// <summary>La venta con sus renglones, o null si no existe.</summary>
     DetalleVenta? ObtenerDetalle(long ventaId);
 
