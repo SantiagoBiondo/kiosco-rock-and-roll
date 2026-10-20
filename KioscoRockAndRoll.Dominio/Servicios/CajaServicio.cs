@@ -30,7 +30,7 @@ public class CajaServicio(ICajaRepositorio caja, TimeProvider reloj)
     }
 
     public ResumenTurno Resumen(Turno turno) =>
-        new(turno, caja.TotalesDeVentas(turno.Id), caja.ListarMovimientos(turno.Id));
+        new(turno, caja.TotalesDeVentas(turno.Id), caja.ListarMovimientos(turno.Id), caja.CantidadDeVentas(turno.Id));
 
     /// <summary>Cierra la caja con el efectivo contado y devuelve las cuentas finales.</summary>
     public ResumenTurno CerrarCaja(decimal efectivoContado)

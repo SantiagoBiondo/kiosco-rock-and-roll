@@ -73,11 +73,12 @@ public class CajaTests
         [
             Movimiento(TipoMovimientoCaja.Retiro, 2000),
             Movimiento(TipoMovimientoCaja.Ingreso, 500)
-        ]);
+        ],
+        cantidadVentas: 12); // una de las ventas fue mixta: aparece en dos medios
 
         Assert.Equal(12000, resumen.VentasEnEfectivo);
         Assert.Equal(19500, resumen.TotalVendido);
-        Assert.Equal(13, resumen.CantidadVentas);
+        Assert.Equal(12, resumen.CantidadVentas);
         Assert.Equal(5000 + 12000 + 500 - 2000, resumen.EfectivoEsperado);
         Assert.Null(resumen.Diferencia); // sigue abierto
     }
@@ -91,7 +92,7 @@ public class CajaTests
         var turno = TurnoAbierto(inicial: 5000);
         turno.Cerrar(contado, Manana);
 
-        var resumen = new ResumenTurno(turno, [], []);
+        var resumen = new ResumenTurno(turno, [], [], cantidadVentas: 0);
 
         Assert.Equal(diferencia, resumen.Diferencia);
     }

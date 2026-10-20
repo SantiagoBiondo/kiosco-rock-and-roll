@@ -122,21 +122,24 @@ public sealed class MovimientoCaja
     }
 }
 
-/// <summary>Lo vendido en un turno con un medio de pago.</summary>
+/// <summary>Lo cobrado en un turno con un medio de pago, y en cuántas ventas se usó ese medio.</summary>
 public sealed record TotalPorMedio(MedioDePago Medio, int CantidadVentas, decimal Total);
 
 /// <summary>
 /// Las cuentas de un turno: cuánto efectivo debería haber en la caja y, si ya se cerró,
 /// la diferencia con lo que se contó.
 /// </summary>
-public sealed class ResumenTurno(Turno turno, IReadOnlyList<TotalPorMedio> ventas, IReadOnlyList<MovimientoCaja> movimientos)
+/// <param name="ventas">Lo cobrado con cada medio. Una venta pagada con varios medios aparece en cada uno.</param>
+/// <param name="cantidadVentas">Cuántas ventas hubo (no se puede sumar desde <paramref name="ventas"/> por los pagos mixtos).</param>
+public sealed class ResumenTurno(
+    Turno turno, IReadOnlyList<TotalPorMedio> ventas, IReadOnlyList<MovimientoCaja> movimientos, int cantidadVentas)
 {
     public Turno Turno { get; } = turno;
     public IReadOnlyList<TotalPorMedio> Ventas { get; } = ventas;
     public IReadOnlyList<MovimientoCaja> Movimientos { get; } = movimientos;
 
     public decimal TotalVendido => Ventas.Sum(v => v.Total);
-    public int CantidadVentas => Ventas.Sum(v => v.CantidadVentas);
+    public int CantidadVentas { get; } = cantidadVentas;
     public decimal VentasEnEfectivo => Ventas.Where(v => v.Medio == MedioDePago.Efectivo).Sum(v => v.Total);
     public decimal Ingresos => Movimientos.Where(m => m.Tipo == TipoMovimientoCaja.Ingreso).Sum(m => m.Monto);
     public decimal Retiros => Movimientos.Where(m => m.Tipo == TipoMovimientoCaja.Retiro).Sum(m => m.Monto);

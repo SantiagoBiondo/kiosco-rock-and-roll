@@ -18,8 +18,23 @@ public sealed class SqliteVentaRepositorio(ConexionSqlite conexion) : IVentaRepo
                 """;
             comandoVenta.Parameters.AddWithValue("$fecha", AFechaTexto(venta.Fecha));
             comandoVenta.Parameters.AddWithValue("$turno", venta.TurnoId);
-            comandoVenta.Parameters.AddWithValue("$medio", (int)venta.MedioDePago);
+            comandoVenta.Parameters.AddWithValue("$medio", (int)venta.MedioPrincipal);
             venta.AsignarId((long)comandoVenta.ExecuteScalar()!);
+        }
+
+        using (var comandoPago = db.CreateCommand())
+        {
+            comandoPago.CommandText = "INSERT INTO VentaPagos (VentaId, Medio, MontoCentavos) VALUES ($venta, $medio, $monto)";
+            var pVentaPago = comandoPago.Parameters.Add("$venta", Microsoft.Data.Sqlite.SqliteType.Integer);
+            var pMedio = comandoPago.Parameters.Add("$medio", Microsoft.Data.Sqlite.SqliteType.Integer);
+            var pMonto = comandoPago.Parameters.Add("$monto", Microsoft.Data.Sqlite.SqliteType.Integer);
+            foreach (var pago in venta.Pagos)
+            {
+                pVentaPago.Value = venta.Id;
+                pMedio.Value = (int)pago.Medio;
+                pMonto.Value = ACentavos(pago.Monto);
+                comandoPago.ExecuteNonQuery();
+            }
         }
 
         using var comandoLinea = db.CreateCommand();
@@ -72,10 +87,40 @@ public sealed class SqliteVentaRepositorio(ConexionSqlite conexion) : IVentaRepo
         comando.Parameters.AddWithValue("$hasta", AFechaTexto(dia.AddDays(1).ToDateTime(TimeOnly.MinValue)));
 
         var ventas = new List<ResumenVenta>();
+        using (var lector = comando.ExecuteReader())
+        {
+            while (lector.Read())
+                ventas.Add(LeerResumen(lector));
+        }
+
+        // Los pagos de todas las ventas del día, en una sola consulta.
+        using var comandoPagos = db.CreateCommand();
+        comandoPagos.CommandText = """
+            SELECT p.VentaId, p.Medio, p.MontoCentavos
+            FROM VentaPagos p
+            JOIN Ventas v ON v.Id = p.VentaId
+            WHERE v.Fecha >= $desde AND v.Fecha < $hasta
+            ORDER BY p.Id
+            """;
+        comandoPagos.Parameters.AddWithValue("$desde", AFechaTexto(dia.ToDateTime(TimeOnly.MinValue)));
+        comandoPagos.Parameters.AddWithValue("$hasta", AFechaTexto(dia.AddDays(1).ToDateTime(TimeOnly.MinValue)));
+        var pagos = LeerPagos(comandoPagos);
+
+        return ventas.Select(v => v with { Pagos = pagos.GetValueOrDefault(v.Id) }).ToList();
+    }
+
+    private static Dictionary<long, List<Pago>> LeerPagos(Microsoft.Data.Sqlite.SqliteCommand comando)
+    {
+        var pagos = new Dictionary<long, List<Pago>>();
         using var lector = comando.ExecuteReader();
         while (lector.Read())
-            ventas.Add(LeerResumen(lector));
-        return ventas;
+        {
+            var ventaId = lector.GetInt64(0);
+            if (!pagos.TryGetValue(ventaId, out var deLaVenta))
+                pagos[ventaId] = deLaVenta = [];
+            deLaVenta.Add(new Pago((MedioDePago)lector.GetInt32(1), DeCentavos(lector.GetInt64(2))));
+        }
+        return pagos;
     }
 
     public IReadOnlyList<ProductoVendido> ProductosVendidosDelDia(DateOnly dia)
@@ -184,14 +229,22 @@ public sealed class SqliteVentaRepositorio(ConexionSqlite conexion) : IVentaRepo
         comandoLineas.Parameters.AddWithValue("$id", ventaId);
 
         var lineas = new List<LineaVenta>();
-        using var lectorLineas = comandoLineas.ExecuteReader();
-        while (lectorLineas.Read())
+        using (var lectorLineas = comandoLineas.ExecuteReader())
         {
-            lineas.Add(new LineaVenta(
-                lectorLineas.GetInt64(0), lectorLineas.GetString(1), lectorLineas.GetInt32(2),
-                DeCentavos(lectorLineas.GetInt64(3)), DeCentavos(lectorLineas.GetInt64(4))));
+            while (lectorLineas.Read())
+            {
+                lineas.Add(new LineaVenta(
+                    lectorLineas.GetInt64(0), lectorLineas.GetString(1), lectorLineas.GetInt32(2),
+                    DeCentavos(lectorLineas.GetInt64(3)), DeCentavos(lectorLineas.GetInt64(4))));
+            }
         }
-        return new DetalleVenta(resumen, lineas);
+
+        using var comandoPagos = db.CreateCommand();
+        comandoPagos.CommandText = "SELECT VentaId, Medio, MontoCentavos FROM VentaPagos WHERE VentaId = $id ORDER BY Id";
+        comandoPagos.Parameters.AddWithValue("$id", ventaId);
+        var pagos = LeerPagos(comandoPagos);
+
+        return new DetalleVenta(resumen with { Pagos = pagos.GetValueOrDefault(ventaId) }, lineas);
     }
 
     public void Anular(long ventaId, string motivo, DateTime fecha)

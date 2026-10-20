@@ -117,6 +117,25 @@ public sealed class InicializadorBaseDeDatos(ConexionSqlite conexion, GestorDeBa
         UPDATE VentaLineas
         SET CostoUnitarioCentavos = COALESCE(
             (SELECT p.PrecioCostoCentavos FROM Productos p WHERE p.Id = VentaLineas.ProductoId), 0);
+        """,
+
+        // 7: una venta se puede pagar con varios medios. Cada parte va en VentaPagos;
+        // Ventas.MedioPago queda como el medio principal (el de mayor monto).
+        // Las ventas anteriores pasan a tener un solo pago por el total.
+        """
+        CREATE TABLE VentaPagos (
+            Id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            VentaId       INTEGER NOT NULL REFERENCES Ventas(Id),
+            Medio         INTEGER NOT NULL,
+            MontoCentavos INTEGER NOT NULL
+        );
+
+        CREATE INDEX IX_VentaPagos_VentaId ON VentaPagos(VentaId);
+
+        INSERT INTO VentaPagos (VentaId, Medio, MontoCentavos)
+        SELECT v.Id, v.MedioPago,
+               COALESCE((SELECT SUM(l.Cantidad * l.PrecioUnitarioCentavos) FROM VentaLineas l WHERE l.VentaId = v.Id), 0)
+        FROM Ventas v;
         """
     ];
 

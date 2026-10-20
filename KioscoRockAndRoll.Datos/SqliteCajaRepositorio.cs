@@ -100,13 +100,14 @@ public sealed class SqliteCajaRepositorio(ConexionSqlite conexion) : ICajaReposi
     {
         using var db = conexion.Abrir();
         using var comando = db.CreateCommand();
+        // Se suma desde los pagos: una venta mixta aporta cada parte a su medio.
         comando.CommandText = """
-            SELECT v.MedioPago, COUNT(DISTINCT v.Id), COALESCE(SUM(l.Cantidad * l.PrecioUnitarioCentavos), 0)
-            FROM Ventas v
-            JOIN VentaLineas l ON l.VentaId = v.Id
+            SELECT p.Medio, COUNT(DISTINCT v.Id), SUM(p.MontoCentavos)
+            FROM VentaPagos p
+            JOIN Ventas v ON v.Id = p.VentaId
             WHERE v.TurnoId = $turno AND v.AnuladaEn IS NULL
-            GROUP BY v.MedioPago
-            ORDER BY v.MedioPago
+            GROUP BY p.Medio
+            ORDER BY p.Medio
             """;
         comando.Parameters.AddWithValue("$turno", turnoId);
 
@@ -115,6 +116,15 @@ public sealed class SqliteCajaRepositorio(ConexionSqlite conexion) : ICajaReposi
         while (lector.Read())
             totales.Add(new TotalPorMedio((MedioDePago)lector.GetInt32(0), lector.GetInt32(1), DeCentavos(lector.GetInt64(2))));
         return totales;
+    }
+
+    public int CantidadDeVentas(long turnoId)
+    {
+        using var db = conexion.Abrir();
+        using var comando = db.CreateCommand();
+        comando.CommandText = "SELECT COUNT(*) FROM Ventas WHERE TurnoId = $turno AND AnuladaEn IS NULL";
+        comando.Parameters.AddWithValue("$turno", turnoId);
+        return Convert.ToInt32(comando.ExecuteScalar());
     }
 
     private List<Turno> ListarTurnos(string sql, int? cantidad)

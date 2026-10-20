@@ -13,12 +13,12 @@ public sealed record LineaVenta(long ProductoId, string NombreProducto, int Cant
 /// <summary>Una venta ya cobrada. Es inmutable: una vez hecha, no se modifica.</summary>
 public sealed class Venta
 {
-    private Venta(long id, long turnoId, DateTime fecha, MedioDePago medio, IReadOnlyList<LineaVenta> lineas)
+    private Venta(long id, long turnoId, DateTime fecha, IReadOnlyList<Pago> pagos, IReadOnlyList<LineaVenta> lineas)
     {
         Id = id;
         TurnoId = turnoId;
         Fecha = fecha;
-        MedioDePago = medio;
+        Pagos = pagos;
         Lineas = lineas;
     }
 
@@ -28,7 +28,13 @@ public sealed class Venta
     public long TurnoId { get; }
 
     public DateTime Fecha { get; }
-    public MedioDePago MedioDePago { get; }
+
+    /// <summary>Cuánto se pagó con cada medio (suma el total de la venta).</summary>
+    public IReadOnlyList<Pago> Pagos { get; }
+
+    /// <summary>El medio con el que se pagó la mayor parte.</summary>
+    public MedioDePago MedioPrincipal => Pagos.MaxBy(p => p.Monto)!.Medio;
+
     public IReadOnlyList<LineaVenta> Lineas { get; }
     public decimal Total => Lineas.Sum(l => l.Subtotal);
     public int Unidades => Lineas.Sum(l => l.Cantidad);
@@ -48,7 +54,7 @@ public sealed class Venta
         var lineas = carrito.Items
             .Select(i => new LineaVenta(i.Producto.Id, i.Producto.Nombre, i.Cantidad, i.PrecioUnitario, i.Producto.PrecioCosto))
             .ToList();
-        return new Venta(0, turno.Id, fecha, cobro.Medio, lineas);
+        return new Venta(0, turno.Id, fecha, cobro.Pagos, lineas);
     }
 
     public void AsignarId(long id)
@@ -60,15 +66,21 @@ public sealed class Venta
 }
 
 /// <summary>Datos resumidos de una venta para listados (no trae el detalle).</summary>
+/// <param name="MedioDePago">El medio principal (con el que se pagó la mayor parte).</param>
 /// <param name="TurnoId">El turno de caja en que se cobró (null en ventas de antes de que existieran los turnos).</param>
 /// <param name="AnuladaEn">Cuándo se anuló, o null si sigue vigente.</param>
+/// <param name="Pagos">Cuánto se pagó con cada medio. Si no se indica, se toma todo con el medio principal.</param>
 public sealed record ResumenVenta(
     long Id, DateTime Fecha, MedioDePago MedioDePago, int Unidades, decimal Total,
-    long? TurnoId = null, DateTime? AnuladaEn = null, string? MotivoAnulacion = null)
+    long? TurnoId = null, DateTime? AnuladaEn = null, string? MotivoAnulacion = null,
+    IReadOnlyList<Pago>? Pagos = null)
 {
     public const int LargoMaximoMotivo = 100;
 
-    public string MedioDePagoDescripcion => MedioDePago.Descripcion();
+    public IReadOnlyList<Pago> PagosRealizados => Pagos is { Count: > 0 } pagos ? pagos : [new Pago(MedioDePago, Total)];
+
+    /// <summary>"Efectivo" o, si se pagó con varios medios, "Débito $ 1.000,00 + Efectivo $ 500,00".</summary>
+    public string MedioDePagoDescripcion => Cobro.DescribirPagos(PagosRealizados);
     public bool Anulada => AnuladaEn is not null;
     public string Estado => Anulada ? "Anulada" : "";
 

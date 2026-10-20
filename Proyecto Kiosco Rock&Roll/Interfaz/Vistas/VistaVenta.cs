@@ -295,7 +295,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             var venta = _ventas.Cobrar(_carrito, cobro);
             CerrarPanel();
             var vuelto = cobro.Vuelto > 0 ? $"  -  VUELTO: {cobro.Vuelto:C2}" : "";
-            MostrarEstado($"Venta Nº {venta.Id} registrada ({venta.Total:C2}, {cobro.Medio.Descripcion()}){vuelto}", Estilos.Exito);
+            MostrarEstado($"Venta Nº {venta.Id} registrada ({venta.Total:C2}, {cobro.Descripcion}){vuelto}", Estilos.Exito);
         }
 
         private void AbrirPanel(Control contenido)

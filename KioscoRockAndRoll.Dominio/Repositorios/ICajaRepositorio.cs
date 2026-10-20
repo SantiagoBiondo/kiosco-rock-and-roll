@@ -20,6 +20,9 @@ public interface ICajaRepositorio
     void AgregarMovimiento(long turnoId, MovimientoCaja movimiento);
     IReadOnlyList<MovimientoCaja> ListarMovimientos(long turnoId);
 
-    /// <summary>Lo vendido en el turno, agrupado por medio de pago.</summary>
+    /// <summary>Lo cobrado en el turno, agrupado por medio de pago (sin ventas anuladas).</summary>
     IReadOnlyList<TotalPorMedio> TotalesDeVentas(long turnoId);
+
+    /// <summary>Cuántas ventas (no anuladas) hubo en el turno.</summary>
+    int CantidadDeVentas(long turnoId);
 }

@@ -61,10 +61,12 @@ public class VentaServicio(IVentaRepositorio ventas, CajaServicio caja, TimeProv
     public ResumenDelDia ResumenDelDia(DateOnly dia)
     {
         var delDia = ventas.ListarDelDia(dia);
+        // Una venta pagada con varios medios suma cada parte en su medio.
         var porMedio = delDia
             .Where(v => !v.Anulada)
-            .GroupBy(v => v.MedioDePago)
-            .ToDictionary(g => g.Key, g => g.Sum(v => v.Total));
+            .SelectMany(v => v.PagosRealizados)
+            .GroupBy(p => p.Medio)
+            .ToDictionary(g => g.Key, g => g.Sum(p => p.Monto));
         return new ResumenDelDia(dia, delDia, porMedio);
     }
 }
