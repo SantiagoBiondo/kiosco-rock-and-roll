@@ -20,6 +20,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
         private readonly ListadoVentasPorDia ventasPorDia;
 
         private readonly Label lblEstado = new() { AutoSize = true, Font = Estilos.Titulo, Margin = new Padding(6, 12, 24, 3) };
+        private readonly Label lblAviso = new() { AutoSize = true, Margin = new Padding(12, 16, 3, 3), MaximumSize = new Size(800, 0) };
         private readonly Button btnAbrir;
         private readonly Button btnIngreso;
         private readonly Button btnRetiro;
@@ -61,7 +62,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             btnIngreso = Estilos.Boton("Ingreso de efectivo", (_, _) => AbrirPanel(panelMovimiento, () => panelMovimiento.Iniciar(TipoMovimientoCaja.Ingreso)), 190);
             btnRetiro = Estilos.Boton("Retiro de efectivo", (_, _) => AbrirPanel(panelMovimiento, () => panelMovimiento.Iniciar(TipoMovimientoCaja.Retiro)), 190);
             btnCerrar = Estilos.Boton("Cerrar caja", (_, _) => AbrirPanel(panelCerrar, panelCerrar.Iniciar), 150);
-            arriba.Controls.AddRange([btnAbrir, btnIngreso, btnRetiro, btnCerrar]);
+            arriba.Controls.AddRange([btnAbrir, btnIngreso, btnRetiro, btnCerrar, lblAviso]);
 
             // Pestaña "Turno actual": las cuentas a la izquierda, los movimientos a la derecha.
             // La tabla va arriba dentro de una columna fija: si la tabla misma ocupara todo el alto,
@@ -126,7 +127,14 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             panelAbrir.Cancelado += (_, _) => CerrarPanel();
             panelMovimiento.Registrado += (_, _) => CerrarPanel();
             panelMovimiento.Cancelado += (_, _) => CerrarPanel();
-            panelCerrar.Cerrada += (_, _) => CerrarPanel();
+            panelCerrar.Cerrada += (_, cierre) =>
+            {
+                CerrarPanel();
+                if (cierre.RutaPdf is { } ruta)
+                    MostrarAviso($"PDF guardado en {ruta}", Estilos.Exito);
+                else if (cierre.ErrorPdf is { } error)
+                    MostrarAviso($"La caja se cerró, pero no se pudo guardar el PDF: {error}", Color.Red);
+            };
             panelCerrar.Cancelado += (_, _) => CerrarPanel();
 
             // Detalle y anulación desde la pestaña "Ventas por día": al terminar se sigue en esa pestaña.
@@ -244,8 +252,15 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             e.FormattingApplied = true;
         }
 
+        private void MostrarAviso(string texto, Color color)
+        {
+            lblAviso.Text = texto;
+            lblAviso.ForeColor = color;
+        }
+
         private void AbrirPanel(Control panel, Action iniciar)
         {
+            MostrarAviso("", SystemColors.ControlText);
             panelLateral.Mostrar(panel);
             iniciar();
         }

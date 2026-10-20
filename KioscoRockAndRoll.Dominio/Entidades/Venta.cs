@@ -97,5 +97,8 @@ public sealed record ResumenVenta(
     }
 }
 
+/// <summary>Lo vendido de un producto en un período (sin contar ventas anuladas).</summary>
+public sealed record ProductoVendido(string Nombre, int Cantidad, decimal Total);
+
 /// <summary>Una venta con sus renglones, para ver el detalle.</summary>
 public sealed record DetalleVenta(ResumenVenta Venta, IReadOnlyList<LineaVenta> Lineas);

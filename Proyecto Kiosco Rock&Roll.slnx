@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="KioscoRockAndRoll.Datos/KioscoRockAndRoll.Datos.csproj" />
   <Project Path="KioscoRockAndRoll.Dominio/KioscoRockAndRoll.Dominio.csproj" />
+  <Project Path="KioscoRockAndRoll.Reportes/KioscoRockAndRoll.Reportes.csproj" />
   <Project Path="KioscoRockAndRoll.Tests/KioscoRockAndRoll.Tests.csproj" />
   <Project Path="Proyecto Kiosco Rock&amp;Roll/Proyecto Kiosco Rock&amp;Roll.csproj" />
 </Solution>

@@ -1,6 +1,7 @@
 using KioscoRockAndRoll.Dominio;
 using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
+using KioscoRockAndRoll.Reportes;
 
 namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 {
@@ -155,25 +156,35 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         }
     }
 
-    /// <summary>Cerrar la caja: se cuenta el efectivo y se ve la diferencia con lo esperado.</summary>
+    /// <summary>Cómo terminó el cierre: las cuentas y, si se pidió, dónde quedó el PDF (o por qué no se pudo guardar).</summary>
+    public sealed record CierreDeCaja(ResumenTurno Resumen, string? RutaPdf, string? ErrorPdf);
+
+    /// <summary>
+    /// Cerrar la caja: se cuenta el efectivo y se ve la diferencia con lo esperado.
+    /// Opcionalmente, guarda el PDF con las ventas del día.
+    /// </summary>
     public sealed class PanelCerrarCaja : PanelDeCaja
     {
+        private readonly ExportadorDeReportes _exportador;
         private ResumenTurno? _resumen;
 
         private readonly Label lblEsperado = Estilos.Etiqueta("", Estilos.Grande);
         private readonly NumericUpDown numContado = CampoMonto();
         private readonly Label lblDiferencia = Estilos.Etiqueta("", Estilos.Grande);
+        private readonly CheckBox chkPdf = new() { Text = "Guardar PDF de las ventas del día", AutoSize = true, Margin = new Padding(3, 10, 3, 3) };
 
-        public event EventHandler<ResumenTurno>? Cerrada;
+        public event EventHandler<CierreDeCaja>? Cerrada;
 
-        public PanelCerrarCaja(CajaServicio caja) : base("Cerrar caja", "Cerrar caja", caja)
+        public PanelCerrarCaja(CajaServicio caja, ExportadorDeReportes exportador) : base("Cerrar caja", "Cerrar caja", caja)
         {
+            _exportador = exportador;
             tabla.Controls.Add(Estilos.Etiqueta("Efectivo que debería haber"));
             tabla.Controls.Add(lblEsperado);
             tabla.Controls.Add(Estilos.Etiqueta("Contá el efectivo de la caja y escribilo acá"));
             tabla.Controls.Add(numContado);
             tabla.Controls.Add(Estilos.Etiqueta("Diferencia"));
             tabla.Controls.Add(lblDiferencia);
+            tabla.Controls.Add(chkPdf);
             TerminarDeArmar();
 
             numContado.ValueChanged += (_, _) => ActualizarDiferencia();
@@ -222,7 +233,22 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
                     return;
             }
 
-            Cerrada?.Invoke(this, Caja.CerrarCaja(contado));
+            var cuentasFinales = Caja.CerrarCaja(contado);
+            Cerrada?.Invoke(this, chkPdf.Checked ? GuardarPdf(cuentasFinales) : new CierreDeCaja(cuentasFinales, null, null));
+        }
+
+        // La caja ya quedó cerrada: si el PDF falla, se informa pero no se deshace el cierre.
+        private CierreDeCaja GuardarPdf(ResumenTurno resumen)
+        {
+            try
+            {
+                var ruta = _exportador.GuardarVentasDelDia(DateOnly.FromDateTime(resumen.Apertura));
+                return new CierreDeCaja(resumen, ruta, null);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return new CierreDeCaja(resumen, null, ex.Message);
+            }
         }
     }
 }

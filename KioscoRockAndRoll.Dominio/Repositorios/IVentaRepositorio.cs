@@ -13,6 +13,9 @@ public interface IVentaRepositorio
     /// <summary>Las ventas del día, incluidas las anuladas.</summary>
     IReadOnlyList<ResumenVenta> ListarDelDia(DateOnly dia);
 
+    /// <summary>Unidades y recaudación por producto en el día, sin ventas anuladas, de mayor a menor recaudación.</summary>
+    IReadOnlyList<ProductoVendido> ProductosVendidosDelDia(DateOnly dia);
+
     /// <summary>La venta con sus renglones, o null si no existe.</summary>
     DetalleVenta? ObtenerDetalle(long ventaId);
 

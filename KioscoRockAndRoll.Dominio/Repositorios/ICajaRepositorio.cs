@@ -11,6 +11,9 @@ public interface ICajaRepositorio
     /// <summary>Los últimos turnos, del más nuevo al más viejo.</summary>
     IReadOnlyList<Turno> ListarRecientes(int cantidad);
 
+    /// <summary>Los turnos que se abrieron ese día, en orden.</summary>
+    IReadOnlyList<Turno> ListarDelDia(DateOnly dia);
+
     void Agregar(Turno turno);
     void GuardarCierre(Turno turno);
 

@@ -2,6 +2,7 @@ using KioscoRockAndRoll.Datos;
 using KioscoRockAndRoll.Dominio;
 using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
+using KioscoRockAndRoll.Reportes;
 using Microsoft.Extensions.DependencyInjection;
 using Proyecto_Kiosco_Rock_Roll.Interfaz;
 using Proyecto_Kiosco_Rock_Roll.Interfaz.Controles;
@@ -39,6 +40,8 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddSingleton<InventarioServicio>();
             servicios.AddSingleton<VentaServicio>();
             servicios.AddSingleton<CajaServicio>();
+            servicios.AddSingleton<ReporteDelDiaServicio>();
+            servicios.AddSingleton<ExportadorDeReportes>();
             servicios.AddSingleton<CatalogoServicio<Categoria>>();
             servicios.AddSingleton<CatalogoServicio<Proveedor>>();
 

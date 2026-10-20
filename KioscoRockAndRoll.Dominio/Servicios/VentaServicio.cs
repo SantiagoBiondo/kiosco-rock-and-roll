@@ -55,6 +55,9 @@ public class VentaServicio(IVentaRepositorio ventas, CajaServicio caja, TimeProv
         ventas.Anular(ventaId, motivoValidado, reloj.GetLocalNow().DateTime);
     }
 
+    /// <summary>Qué productos se vendieron en el día, de mayor a menor recaudación (sin anuladas).</summary>
+    public IReadOnlyList<ProductoVendido> ProductosVendidos(DateOnly dia) => ventas.ProductosVendidosDelDia(dia);
+
     public ResumenDelDia ResumenDelDia(DateOnly dia)
     {
         var delDia = ventas.ListarDelDia(dia);

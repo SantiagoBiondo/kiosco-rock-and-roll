@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\KioscoRockAndRoll.Dominio\KioscoRockAndRoll.Dominio.csproj" />
     <ProjectReference Include="..\KioscoRockAndRoll.Datos\KioscoRockAndRoll.Datos.csproj" />
+    <ProjectReference Include="..\KioscoRockAndRoll.Reportes\KioscoRockAndRoll.Reportes.csproj" />
   </ItemGroup>
 
 </Project>

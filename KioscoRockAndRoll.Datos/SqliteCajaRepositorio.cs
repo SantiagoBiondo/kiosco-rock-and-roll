@@ -16,6 +16,21 @@ public sealed class SqliteCajaRepositorio(ConexionSqlite conexion) : ICajaReposi
     public IReadOnlyList<Turno> ListarRecientes(int cantidad) =>
         ListarTurnos($"{SelectTurnos} ORDER BY Id DESC LIMIT $cantidad", cantidad);
 
+    public IReadOnlyList<Turno> ListarDelDia(DateOnly dia)
+    {
+        using var db = conexion.Abrir();
+        using var comando = db.CreateCommand();
+        comando.CommandText = $"{SelectTurnos} WHERE Apertura >= $desde AND Apertura < $hasta ORDER BY Id";
+        comando.Parameters.AddWithValue("$desde", AFechaTexto(dia.ToDateTime(TimeOnly.MinValue)));
+        comando.Parameters.AddWithValue("$hasta", AFechaTexto(dia.AddDays(1).ToDateTime(TimeOnly.MinValue)));
+
+        var turnos = new List<Turno>();
+        using var lector = comando.ExecuteReader();
+        while (lector.Read())
+            turnos.Add(Leer(lector));
+        return turnos;
+    }
+
     public void Agregar(Turno turno)
     {
         using var db = conexion.Abrir();

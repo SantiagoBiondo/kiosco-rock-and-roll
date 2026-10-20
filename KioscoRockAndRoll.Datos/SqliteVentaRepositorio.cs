@@ -76,6 +76,29 @@ public sealed class SqliteVentaRepositorio(ConexionSqlite conexion) : IVentaRepo
         return ventas;
     }
 
+    public IReadOnlyList<ProductoVendido> ProductosVendidosDelDia(DateOnly dia)
+    {
+        using var db = conexion.Abrir();
+        using var comando = db.CreateCommand();
+        // Se agrupa por producto; el nombre se toma de las ventas (es el que tenía al venderse).
+        comando.CommandText = """
+            SELECT MAX(l.NombreProducto), SUM(l.Cantidad), SUM(l.Cantidad * l.PrecioUnitarioCentavos) AS Total
+            FROM VentaLineas l
+            JOIN Ventas v ON v.Id = l.VentaId
+            WHERE v.Fecha >= $desde AND v.Fecha < $hasta AND v.AnuladaEn IS NULL
+            GROUP BY l.ProductoId
+            ORDER BY Total DESC
+            """;
+        comando.Parameters.AddWithValue("$desde", AFechaTexto(dia.ToDateTime(TimeOnly.MinValue)));
+        comando.Parameters.AddWithValue("$hasta", AFechaTexto(dia.AddDays(1).ToDateTime(TimeOnly.MinValue)));
+
+        var productos = new List<ProductoVendido>();
+        using var lector = comando.ExecuteReader();
+        while (lector.Read())
+            productos.Add(new ProductoVendido(lector.GetString(0), lector.GetInt32(1), DeCentavos(lector.GetInt64(2))));
+        return productos;
+    }
+
     public DetalleVenta? ObtenerDetalle(long ventaId)
     {
         using var db = conexion.Abrir();

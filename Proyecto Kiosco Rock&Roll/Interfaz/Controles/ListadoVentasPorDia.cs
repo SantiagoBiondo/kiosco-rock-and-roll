@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
+using KioscoRockAndRoll.Reportes;
 
 namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 {
@@ -10,17 +12,20 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
     public class ListadoVentasPorDia : UserControl
     {
         private readonly VentaServicio _ventas;
+        private readonly ExportadorDeReportes _exportador;
 
         private readonly DateTimePicker dtpDia = new() { Format = DateTimePickerFormat.Long, Width = 300 };
         private readonly DataGridView grilla = new();
         private readonly Label lblResumen = new() { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(8), Font = Estilos.Grande };
+        private readonly Label lblEstado = new() { AutoSize = true, Margin = new Padding(12, 14, 3, 3), MaximumSize = new Size(700, 0) };
 
         /// <summary>Se eligió una venta para ver su detalle (o anularla).</summary>
         public event EventHandler<ResumenVenta>? VentaElegida;
 
-        public ListadoVentasPorDia(VentaServicio ventas)
+        public ListadoVentasPorDia(VentaServicio ventas, ExportadorDeReportes exportador)
         {
             _ventas = ventas;
+            _exportador = exportador;
             Font = Estilos.Normal;
 
             var arriba = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6) };
@@ -28,6 +33,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             arriba.Controls.Add(dtpDia);
             arriba.Controls.Add(Estilos.Boton("Hoy", (_, _) => dtpDia.Value = DateTime.Today, 80));
             arriba.Controls.Add(Estilos.Boton("Ver detalle / anular (Enter)", (_, _) => Elegir(), 260));
+            arriba.Controls.Add(Estilos.Boton("Exportar PDF…", (_, _) => ExportarPdf(), 160));
+            arriba.Controls.Add(lblEstado);
 
             Estilos.ConfigurarGrilla(grilla);
             grilla.ReadOnly = true;
@@ -54,7 +61,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             Controls.Add(lblResumen);
             Controls.Add(arriba);
 
-            dtpDia.ValueChanged += (_, _) => Cargar();
+            dtpDia.ValueChanged += (_, _) => { lblEstado.Text = ""; Cargar(); };
         }
 
         public void Cargar()
@@ -90,6 +97,35 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         {
             if (grilla.CurrentRow?.DataBoundItem is ResumenVenta venta)
                 VentaElegida?.Invoke(this, venta);
+        }
+
+        private void ExportarPdf()
+        {
+            var dia = DateOnly.FromDateTime(dtpDia.Value);
+            Directory.CreateDirectory(ExportadorDeReportes.CarpetaPorDefecto);
+            using var dialogo = new SaveFileDialog
+            {
+                Title = "Guardar las ventas del día en PDF",
+                Filter = "PDF (*.pdf)|*.pdf",
+                InitialDirectory = ExportadorDeReportes.CarpetaPorDefecto,
+                FileName = ExportadorDeReportes.NombreDeArchivo(dia)
+            };
+            if (dialogo.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            try
+            {
+                var ruta = _exportador.GuardarVentasDelDia(dia, dialogo.FileName);
+                lblEstado.Text = $"PDF guardado: {Path.GetFileName(ruta)}";
+                lblEstado.ForeColor = Estilos.Exito;
+                Process.Start(new ProcessStartInfo { FileName = ruta, UseShellExecute = true });
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Lo más común: el PDF está abierto en otro programa y no se puede reemplazar.
+                lblEstado.Text = $"No se pudo guardar el PDF: {ex.Message}";
+                lblEstado.ForeColor = Color.Red;
+            }
         }
     }
 }

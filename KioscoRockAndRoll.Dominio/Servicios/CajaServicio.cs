@@ -41,6 +41,10 @@ public class CajaServicio(ICajaRepositorio caja, TimeProvider reloj)
         return Resumen(turno);
     }
 
+    /// <summary>Los turnos abiertos ese día (cerrados o no), en orden.</summary>
+    public IReadOnlyList<ResumenTurno> TurnosDelDia(DateOnly dia) =>
+        caja.ListarDelDia(dia).Select(Resumen).ToList();
+
     /// <summary>Los últimos turnos cerrados, del más nuevo al más viejo.</summary>
     public IReadOnlyList<ResumenTurno> TurnosAnteriores(int cantidad = 60) =>
         caja.ListarRecientes(cantidad)
