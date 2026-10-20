@@ -1,10 +1,10 @@
 using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
 
-namespace Proyecto_Kiosco_Rock_Roll.Formularios
+namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
 {
     /// <summary>Ventas de un día con totales por medio de pago (sirve para el cierre de caja).</summary>
-    public class FormVentasDelDia : Form
+    public class VistaVentasDelDia : Vista
     {
         private readonly VentaServicio _ventas;
 
@@ -12,18 +12,14 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
         private readonly DataGridView grilla = new();
         private readonly Label lblResumen = new() { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(8), Font = Estilos.Grande };
 
-        public FormVentasDelDia(VentaServicio ventas)
+        public VistaVentasDelDia(VentaServicio ventas)
         {
             _ventas = ventas;
-
-            Text = "Ventas del día";
-            Font = Estilos.Normal;
-            Size = new Size(850, 600);
-            StartPosition = FormStartPosition.CenterParent;
 
             var arriba = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6) };
             arriba.Controls.Add(new Label { Text = "Día:", AutoSize = true, Margin = new Padding(3, 6, 3, 3) });
             arriba.Controls.Add(dtpDia);
+            arriba.Controls.Add(Estilos.Boton("Hoy", (_, _) => dtpDia.Value = DateTime.Today, 80));
 
             Estilos.ConfigurarGrilla(grilla);
             grilla.ReadOnly = true;
@@ -38,17 +34,15 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
             Controls.Add(arriba);
 
             dtpDia.ValueChanged += (_, _) => Cargar();
-            Cargar();
         }
 
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        public override string Titulo => "Ventas del día";
+        public override Keys Atajo => Keys.F4;
+
+        public override void AlMostrar()
         {
-            if (keyData == Keys.Escape)
-            {
-                Close();
-                return true;
-            }
-            return base.ProcessCmdKey(ref msg, keyData);
+            Cargar();
+            grilla.Focus();
         }
 
         private void Cargar()

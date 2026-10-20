@@ -1,29 +1,27 @@
 using KioscoRockAndRoll.Dominio;
 using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
+using Proyecto_Kiosco_Rock_Roll.Interfaz.Controles;
 
-namespace Proyecto_Kiosco_Rock_Roll.Formularios
+namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
 {
-    /// <summary>Listado de productos: buscar, dar de alta, editar y eliminar.</summary>
-    public class FormInventario : Form
+    /// <summary>Listado de productos. El alta y la edición se hacen en el panel de la derecha.</summary>
+    public class VistaInventario : Vista
     {
         private readonly InventarioServicio _inventario;
-        private readonly IVentanas _ventanas;
+
+        private readonly PanelLateral panelLateral = new();
+        private readonly EditorProducto editor;
 
         private readonly TextBox txtBuscar = new() { Width = 350, Font = Estilos.Grande, PlaceholderText = "Buscar por nombre o código" };
         private readonly CheckBox chkStockBajo = new() { Text = "Solo stock bajo", AutoSize = true, Margin = new Padding(12, 10, 3, 3) };
         private readonly DataGridView grilla = new();
         private readonly Label lblResumen = new() { AutoSize = true, Margin = new Padding(12, 14, 3, 3) };
 
-        public FormInventario(InventarioServicio inventario, IVentanas ventanas)
+        public VistaInventario(InventarioServicio inventario)
         {
             _inventario = inventario;
-            _ventanas = ventanas;
-
-            Text = "Inventario";
-            Font = Estilos.Normal;
-            Size = new Size(1000, 650);
-            StartPosition = FormStartPosition.CenterParent;
+            editor = new EditorProducto(inventario);
 
             var arriba = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6) };
             arriba.Controls.Add(txtBuscar);
@@ -51,29 +49,50 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
             abajo.Controls.Add(Estilos.Boton("Nuevo (Insert)", (_, _) => Nuevo()));
             abajo.Controls.Add(Estilos.Boton("Editar (Enter)", (_, _) => Editar()));
             abajo.Controls.Add(Estilos.Boton("Eliminar (Supr)", (_, _) => Eliminar()));
-            abajo.Controls.Add(Estilos.Boton("Cerrar (Esc)", (_, _) => Close()));
 
-            Controls.Add(grilla);
-            Controls.Add(abajo);
-            Controls.Add(arriba);
+            var principal = new Panel { Dock = DockStyle.Fill };
+            principal.Controls.Add(grilla);
+            principal.Controls.Add(abajo);
+            principal.Controls.Add(arriba);
+            Controls.Add(principal);
+            Controls.Add(panelLateral);
 
             txtBuscar.TextChanged += (_, _) => Cargar();
             chkStockBajo.CheckedChanged += (_, _) => Cargar();
-            Shown += (_, _) => txtBuscar.Focus();
-            Cargar();
+            editor.Guardado += (_, producto) => { CerrarEditor(); Cargar(producto.Id); };
+            editor.Cancelado += (_, _) => CerrarEditor();
+        }
+
+        public override string Titulo => "Inventario";
+        public override Keys Atajo => Keys.F2;
+
+        public override void AlMostrar()
+        {
+            Cargar(Seleccionado?.Id);
+            if (panelLateral.Abierto)
+                editor.Enfocar();
+            else
+                txtBuscar.Focus();
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            // Si el editor está abierto, Enter y Esc los maneja él (le llegan primero).
             switch (keyData)
             {
                 case Keys.Insert: Nuevo(); return true;
                 case Keys.Enter: Editar(); return true;
                 case Keys.Delete when grilla.Focused: Eliminar(); return true;
-                case Keys.Escape: Close(); return true;
                 case Keys.Down when txtBuscar.Focused && grilla.Rows.Count > 0: grilla.Focus(); return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                editor.Dispose();
+            base.Dispose(disposing);
         }
 
         private Producto? Seleccionado => grilla.CurrentRow?.DataBoundItem as Producto;
@@ -93,14 +112,28 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
 
         private void Nuevo()
         {
-            if (_ventanas.AltaProducto(this) is { } creado)
-                Cargar(creado.Id);
+            editor.NuevoProducto();
+            AbrirEditor();
         }
 
         private void Editar()
         {
-            if (Seleccionado is { } producto && _ventanas.EditarProducto(this, producto) is { } editado)
-                Cargar(editado.Id);
+            if (Seleccionado is not { } producto)
+                return;
+            editor.Editar(producto);
+            AbrirEditor();
+        }
+
+        private void AbrirEditor()
+        {
+            panelLateral.Mostrar(editor);
+            editor.Enfocar();
+        }
+
+        private void CerrarEditor()
+        {
+            panelLateral.Ocultar();
+            grilla.Focus();
         }
 
         private void Eliminar()

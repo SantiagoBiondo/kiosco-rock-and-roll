@@ -2,7 +2,8 @@ using KioscoRockAndRoll.Datos;
 using KioscoRockAndRoll.Dominio;
 using KioscoRockAndRoll.Dominio.Servicios;
 using Microsoft.Extensions.DependencyInjection;
-using Proyecto_Kiosco_Rock_Roll.Formularios;
+using Proyecto_Kiosco_Rock_Roll.Interfaz;
+using Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas;
 
 namespace Proyecto_Kiosco_Rock_Roll
 {
@@ -22,7 +23,7 @@ namespace Proyecto_Kiosco_Rock_Roll
             using var proveedor = ConfigurarServicios().BuildServiceProvider(validateScopes: true);
             proveedor.GetRequiredService<InicializadorBaseDeDatos>().Inicializar();
 
-            Application.Run(ActivatorUtilities.CreateInstance<FormVenta>(proveedor));
+            Application.Run(proveedor.GetRequiredService<FormPrincipal>());
         }
 
         /// <summary>
@@ -42,9 +43,12 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddSingleton<InventarioServicio>();
             servicios.AddSingleton<VentaServicio>();
 
-            // Los formularios no se registran: los crea IVentanas con ActivatorUtilities,
-            // así el contenedor no se queda con referencias a ventanas ya cerradas.
-            servicios.AddSingleton<IVentanas, Ventanas>();
+            // Una sola ventana con una instancia de cada vista durante toda la ejecución.
+            servicios.AddSingleton<FormPrincipal>();
+            servicios.AddSingleton<VistaVenta>();
+            servicios.AddSingleton<VistaInventario>();
+            servicios.AddSingleton<VistaIngresoMercaderia>();
+            servicios.AddSingleton<VistaVentasDelDia>();
             return servicios;
         }
 

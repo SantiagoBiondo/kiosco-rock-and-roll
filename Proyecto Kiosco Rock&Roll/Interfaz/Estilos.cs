@@ -1,13 +1,19 @@
-namespace Proyecto_Kiosco_Rock_Roll.Formularios
+using System.Globalization;
+
+namespace Proyecto_Kiosco_Rock_Roll.Interfaz
 {
-    // Ayudas para que todas las pantallas se vean parecidas.
+    /// <summary>Ayudas para que todas las pantallas se vean parecidas.</summary>
     public static class Estilos
     {
         public static readonly Font Normal = new("Segoe UI", 11F);
         public static readonly Font Grande = new("Segoe UI", 16F);
+        public static readonly Font Titulo = new("Segoe UI", 15F, FontStyle.Bold);
         public static readonly Font Total = new("Segoe UI", 28F, FontStyle.Bold);
 
         public static readonly Color FondoStockBajo = Color.FromArgb(255, 220, 220);
+        public static readonly Color FondoPanelLateral = Color.FromArgb(243, 246, 250);
+        public static readonly Color FondoBarra = Color.FromArgb(32, 36, 44);
+        public static readonly Color SeccionActiva = Color.FromArgb(220, 53, 69);
         public static readonly Color Advertencia = Color.DarkOrange;
         public static readonly Color Exito = Color.ForestGreen;
 
@@ -69,5 +75,15 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
                 TextAlign = HorizontalAlignment.Right
             };
         }
+
+        /// <summary>
+        /// Lee lo que está escrito en el campo aunque todavía no se haya confirmado
+        /// (Value recién se actualiza al salir del campo).
+        /// </summary>
+        public static decimal ValorTipeado(this NumericUpDown campo) =>
+            decimal.TryParse(campo.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out var valor) ? valor : 0;
+
+        public static Label Etiqueta(string texto, Font? fuente = null) =>
+            new() { Text = texto, AutoSize = true, Font = fuente ?? Normal, Anchor = AnchorStyles.Left, Margin = new Padding(3, 8, 12, 8) };
     }
 }

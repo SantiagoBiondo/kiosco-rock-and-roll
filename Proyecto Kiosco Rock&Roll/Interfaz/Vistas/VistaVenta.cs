@@ -1,20 +1,24 @@
-using KioscoRockAndRoll.Dominio;
 using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
+using Proyecto_Kiosco_Rock_Roll.Interfaz.Controles;
 
-namespace Proyecto_Kiosco_Rock_Roll.Formularios
+namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
 {
     /// <summary>
-    /// Pantalla principal: se escanean los productos y se cobra.
+    /// Mostrador: se escanean los productos y se cobra.
     /// El lector de códigos funciona como un teclado: escribe el código y aprieta Enter.
-    /// La lógica del carrito vive en <see cref="Carrito"/>; este formulario solo la muestra.
+    /// La búsqueda, el alta de productos nuevos y el cobro se abren en el panel de la derecha.
     /// </summary>
-    public class FormVenta : Form
+    public class VistaVenta : Vista
     {
         private readonly InventarioServicio _inventario;
         private readonly VentaServicio _ventas;
-        private readonly IVentanas _ventanas;
         private readonly Carrito _carrito = new();
+
+        private readonly PanelLateral panelLateral = new();
+        private readonly BuscadorProducto buscador;
+        private readonly EditorProducto editor;
+        private readonly PanelCobro panelCobro = new();
 
         private readonly TextBox txtCodigo = new() { Font = Estilos.Grande, Width = 420, PlaceholderText = "Escaneá o escribí el código" };
         private readonly DataGridView grilla = new();
@@ -22,30 +26,18 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
         private readonly Label lblTotal = new() { Font = Estilos.Total, AutoSize = true };
         private readonly Label lblEstado = new() { AutoSize = true, Font = Estilos.Normal, Anchor = AnchorStyles.Left };
 
-        public FormVenta(InventarioServicio inventario, VentaServicio ventas, IVentanas ventanas)
+        public VistaVenta(InventarioServicio inventario, VentaServicio ventas)
         {
             _inventario = inventario;
             _ventas = ventas;
-            _ventanas = ventanas;
-
-            Text = "Kiosco Rock & Roll - Venta";
-            Font = Estilos.Normal;
-            Size = new Size(1100, 700);
-            MinimumSize = new Size(900, 550);
-            StartPosition = FormStartPosition.CenterScreen;
-            WindowState = FormWindowState.Maximized;
-
-            // Barra de arriba: accesos a las otras pantallas.
-            var menu = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6) };
-            menu.Controls.Add(Estilos.Boton("Inventario (F2)", (_, _) => AbrirInventario()));
-            menu.Controls.Add(Estilos.Boton("Ingreso mercadería (F3)", (_, _) => AbrirIngreso(), 210));
-            menu.Controls.Add(Estilos.Boton("Ventas del día (F4)", (_, _) => AbrirVentasDelDia(), 190));
+            buscador = new BuscadorProducto(inventario);
+            editor = new EditorProducto(inventario);
 
             // Zona de escaneo.
             var escaneo = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6) };
             escaneo.Controls.Add(new Label { Text = "Código:", AutoSize = true, Font = Estilos.Grande, Margin = new Padding(3, 8, 3, 3) });
             escaneo.Controls.Add(txtCodigo);
-            escaneo.Controls.Add(Estilos.Boton("Buscar por nombre (F5)", (_, _) => BuscarPorNombre(), 210));
+            escaneo.Controls.Add(Estilos.Boton("Buscar por nombre (F5)", (_, _) => AbrirBuscador(), 210));
             escaneo.Controls.Add(new Label
             {
                 Text = "Tip: \"3*código\" agrega 3 unidades",
@@ -78,12 +70,12 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
             acciones.Controls.Add(Estilos.Boton("+1", (_, _) => SumarAlSeleccionado(+1), 60));
             acciones.Controls.Add(Estilos.Boton("-1", (_, _) => SumarAlSeleccionado(-1), 60));
             acciones.Controls.Add(Estilos.Boton("Quitar (Supr)", (_, _) => QuitarSeleccionado(), 150));
-            acciones.Controls.Add(Estilos.Boton("Cancelar venta (Esc)", (_, _) => CancelarVenta(), 200));
+            acciones.Controls.Add(Estilos.Boton("Cancelar venta", (_, _) => CancelarVenta(), 170));
 
             var totalYCobro = new FlowLayoutPanel { AutoSize = true };
             totalYCobro.Controls.Add(new Label { Text = "TOTAL:", AutoSize = true, Font = Estilos.Grande, Margin = new Padding(3, 16, 3, 3) });
             totalYCobro.Controls.Add(lblTotal);
-            var btnCobrar = Estilos.Boton("COBRAR (F12)", (_, _) => Cobrar(), 200);
+            var btnCobrar = Estilos.Boton("COBRAR (F12)", (_, _) => AbrirCobro(), 200);
             btnCobrar.Height = 60;
             btnCobrar.Font = Estilos.Grande;
             btnCobrar.BackColor = Estilos.Exito;
@@ -95,32 +87,65 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
             abajo.Controls.Add(totalYCobro, 2, 0);
 
             // El orden importa: lo que tiene Dock = Fill va primero.
-            Controls.Add(grilla);
-            Controls.Add(abajo);
-            Controls.Add(escaneo);
-            Controls.Add(menu);
+            var principal = new Panel { Dock = DockStyle.Fill };
+            principal.Controls.Add(grilla);
+            principal.Controls.Add(abajo);
+            principal.Controls.Add(escaneo);
+            Controls.Add(principal);
+            Controls.Add(panelLateral);
 
             txtCodigo.KeyDown += TxtCodigo_KeyDown;
             _carrito.Cambio += (_, _) => DibujarCarrito();
-            Shown += (_, _) => txtCodigo.Focus();
+
+            buscador.Elegido += (_, producto) => { CerrarPanel(); Agregar(producto, 1); };
+            buscador.Cancelado += (_, _) => CerrarPanel();
+            editor.Guardado += (_, producto) => { CerrarPanel(); Agregar(producto, _cantidadPendiente); };
+            editor.Cancelado += (_, _) => { CerrarPanel(); MostrarEstado("No se dio de alta el producto.", SystemColors.GrayText); };
+            panelCobro.Confirmado += (_, cobro) => Cobrar(cobro);
+            panelCobro.Cancelado += (_, _) => CerrarPanel();
+
             DibujarCarrito();
+        }
+
+        public override string Titulo => "Venta";
+        public override Keys Atajo => Keys.F1;
+
+        public override void AlMostrar()
+        {
+            // Si se editó un producto (precio, stock) en otra sección mientras había una venta a medias,
+            // el carrito toma los datos nuevos.
+            if (!_carrito.EstaVacio)
+                _carrito.Refrescar(_inventario.ObtenerPorId);
+            EnfocarPanelOCodigo();
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            // Las teclas que manejan el buscador, el editor o el cobro llegan primero a ellos.
             switch (keyData)
             {
-                case Keys.F2: AbrirInventario(); return true;
-                case Keys.F3: AbrirIngreso(); return true;
-                case Keys.F4: AbrirVentasDelDia(); return true;
-                case Keys.F5: BuscarPorNombre(); return true;
-                case Keys.F12: Cobrar(); return true;
+                case Keys.F5: AbrirBuscador(); return true;
+                case Keys.F12: AbrirCobro(); return true;
                 case Keys.Escape when !grilla.IsCurrentCellInEditMode: CancelarVenta(); return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Los controles del panel lateral pueden no estar en pantalla: se liberan a mano.
+                buscador.Dispose();
+                editor.Dispose();
+                panelCobro.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
         // ---------- Escaneo ----------
+
+        private int _cantidadPendiente = 1;
 
         private void TxtCodigo_KeyDown(object? sender, KeyEventArgs e)
         {
@@ -138,16 +163,18 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
                 return;
             }
 
-            var producto = _inventario.ObtenerPorCodigo(escaneado.Codigo) ?? OfrecerAlta(escaneado.Codigo);
-            if (producto != null)
+            if (_inventario.ObtenerPorCodigo(escaneado.Codigo) is { } producto)
+            {
                 Agregar(producto, escaneado.Cantidad);
-        }
+                return;
+            }
 
-        private Producto? OfrecerAlta(string codigo)
-        {
-            if (!Mensajes.Confirmar(this, $"El código {codigo} no está registrado.\n¿Querés darlo de alta ahora?"))
-                return null;
-            return _ventanas.AltaProducto(this, codigo);
+            // Código desconocido: se da de alta ahí mismo y, al guardar, se agrega al carrito.
+            _cantidadPendiente = escaneado.Cantidad;
+            editor.NuevoProducto(escaneado.Codigo);
+            AbrirPanel(editor);
+            editor.Enfocar();
+            MostrarEstado($"El código {escaneado.Codigo} no está registrado: completá los datos a la derecha.", Estilos.Advertencia);
         }
 
         private void Agregar(Producto producto, int cantidad)
@@ -155,6 +182,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
             var item = _carrito.Agregar(producto, cantidad);
             SeleccionarProducto(producto.Id);
             InformarItem(item);
+            txtCodigo.Focus();
         }
 
         // ---------- Edición del carrito ----------
@@ -217,9 +245,15 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
             txtCodigo.Focus();
         }
 
-        // ---------- Cobro ----------
+        // ---------- Panel lateral ----------
 
-        private void Cobrar()
+        private void AbrirBuscador()
+        {
+            AbrirPanel(buscador);
+            buscador.Activar();
+        }
+
+        private void AbrirCobro()
         {
             if (_carrito.EstaVacio)
             {
@@ -227,50 +261,40 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
                 txtCodigo.Focus();
                 return;
             }
+            AbrirPanel(panelCobro);
+            panelCobro.Iniciar(_carrito.Total);
+        }
 
-            var cobro = _ventanas.PedirCobro(this, _carrito.Total);
-            if (cobro != null)
+        private void Cobrar(Cobro cobro)
+        {
+            var venta = _ventas.Cobrar(_carrito, cobro);
+            CerrarPanel();
+            var vuelto = cobro.Vuelto > 0 ? $"  -  VUELTO: {cobro.Vuelto:C2}" : "";
+            MostrarEstado($"Venta Nº {venta.Id} registrada ({venta.Total:C2}, {cobro.Medio.Descripcion()}){vuelto}", Estilos.Exito);
+        }
+
+        private void AbrirPanel(Control contenido)
+        {
+            panelLateral.Mostrar(contenido);
+            // Mientras hay un panel abierto, no se puede escanear para no mezclar acciones.
+            txtCodigo.Enabled = false;
+        }
+
+        private void CerrarPanel()
+        {
+            panelLateral.Ocultar();
+            txtCodigo.Enabled = true;
+            txtCodigo.Focus();
+        }
+
+        private void EnfocarPanelOCodigo()
+        {
+            switch (panelLateral.Contenido)
             {
-                var venta = _ventas.Cobrar(_carrito, cobro);
-                var vuelto = cobro.Vuelto > 0 ? $"  -  VUELTO: {cobro.Vuelto:C2}" : "";
-                MostrarEstado($"Venta Nº {venta.Id} registrada ({venta.Total:C2}, {cobro.Medio.Descripcion()}){vuelto}", Estilos.Exito);
+                case EditorProducto e: e.Enfocar(); break;
+                case Control c: c.SelectNextControl(c, true, true, true, true); break;
+                default: txtCodigo.Focus(); break;
             }
-            txtCodigo.Focus();
-        }
-
-        // ---------- Otras pantallas ----------
-
-        private void BuscarPorNombre()
-        {
-            if (_ventanas.BuscarProducto(this) is { } producto)
-                Agregar(producto, 1);
-            txtCodigo.Focus();
-        }
-
-        private void AbrirInventario()
-        {
-            _ventanas.MostrarInventario(this);
-            RefrescarCarrito();
-        }
-
-        private void AbrirIngreso()
-        {
-            _ventanas.MostrarIngresoMercaderia(this);
-            RefrescarCarrito();
-        }
-
-        private void AbrirVentasDelDia()
-        {
-            _ventanas.MostrarVentasDelDia(this);
-            txtCodigo.Focus();
-        }
-
-        // Si se editó un producto (precio, stock) mientras había una venta a medias, el carrito toma los datos nuevos.
-        private void RefrescarCarrito()
-        {
-            if (!_carrito.EstaVacio)
-                _carrito.Refrescar(_inventario.ObtenerPorId);
-            txtCodigo.Focus();
         }
 
         // ---------- Presentación ----------

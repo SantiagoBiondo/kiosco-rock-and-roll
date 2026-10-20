@@ -1,31 +1,28 @@
-using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
+using Proyecto_Kiosco_Rock_Roll.Interfaz.Controles;
 
-namespace Proyecto_Kiosco_Rock_Roll.Formularios
+namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
 {
     /// <summary>
     /// Para cuando llega un pedido: se escanea cada producto y se suma al stock.
-    /// Si el código no existe, se abre el alta con el código y la cantidad ya cargados.
+    /// Si el código no existe, se da de alta en el panel de la derecha con el código y la cantidad ya cargados.
     /// </summary>
-    public class FormIngresoMercaderia : Form
+    public class VistaIngresoMercaderia : Vista
     {
         private readonly InventarioServicio _inventario;
-        private readonly IVentanas _ventanas;
+
+        private readonly PanelLateral panelLateral = new();
+        private readonly EditorProducto editor;
 
         private readonly TextBox txtCodigo = new() { Width = 380, Font = Estilos.Grande, PlaceholderText = "Escaneá el producto" };
         private readonly NumericUpDown numCantidad = Estilos.CampoNumero(0, 100_000);
         private readonly ListBox lstIngresos = new() { Dock = DockStyle.Fill, Font = Estilos.Normal, IntegralHeight = false };
         private readonly Label lblEstado = new() { Dock = DockStyle.Bottom, AutoSize = false, Height = 36, Padding = new Padding(6), Font = Estilos.Normal };
 
-        public FormIngresoMercaderia(InventarioServicio inventario, IVentanas ventanas)
+        public VistaIngresoMercaderia(InventarioServicio inventario)
         {
             _inventario = inventario;
-            _ventanas = ventanas;
-
-            Text = "Ingreso de mercadería";
-            Font = Estilos.Normal;
-            Size = new Size(800, 550);
-            StartPosition = FormStartPosition.CenterParent;
+            editor = new EditorProducto(inventario);
 
             numCantidad.Minimum = 1;
             numCantidad.Value = 1;
@@ -44,26 +41,46 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
                 Height = 28,
                 Padding = new Padding(8, 4, 0, 0),
                 ForeColor = SystemColors.GrayText,
-                Text = "Primero poné la cantidad (si es más de 1) y después escaneá. Esc para cerrar."
+                Text = "Primero poné la cantidad (si es más de 1) y después escaneá. Abajo queda el registro de lo ingresado."
             };
 
-            Controls.Add(lstIngresos);
-            Controls.Add(lblEstado);
-            Controls.Add(ayuda);
-            Controls.Add(arriba);
+            var principal = new Panel { Dock = DockStyle.Fill };
+            principal.Controls.Add(lstIngresos);
+            principal.Controls.Add(lblEstado);
+            principal.Controls.Add(ayuda);
+            principal.Controls.Add(arriba);
+            Controls.Add(principal);
+            Controls.Add(panelLateral);
 
             txtCodigo.KeyDown += TxtCodigo_KeyDown;
-            Shown += (_, _) => txtCodigo.Focus();
+            editor.Guardado += (_, nuevo) =>
+            {
+                CerrarEditor();
+                Registrar($"NUEVO  {nuevo.Nombre}  (stock: {nuevo.Stock})");
+            };
+            editor.Cancelado += (_, _) =>
+            {
+                CerrarEditor();
+                MostrarEstado("No se cargó el producto nuevo.", Estilos.Advertencia);
+            };
         }
 
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        public override string Titulo => "Ingreso mercadería";
+        public override Keys Atajo => Keys.F3;
+
+        public override void AlMostrar()
         {
-            if (keyData == Keys.Escape)
-            {
-                Close();
-                return true;
-            }
-            return base.ProcessCmdKey(ref msg, keyData);
+            if (panelLateral.Abierto)
+                editor.Enfocar();
+            else
+                txtCodigo.Focus();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                editor.Dispose();
+            base.Dispose(disposing);
         }
 
         private void TxtCodigo_KeyDown(object? sender, KeyEventArgs e)
@@ -81,17 +98,20 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
             if (_inventario.IngresarMercaderia(codigo, cantidad) is { } existente)
             {
                 Registrar($"+{cantidad}  {existente.Nombre}  (stock: {existente.Stock})");
-            }
-            else if (_ventanas.AltaProducto(this, codigo, cantidad) is { } nuevo)
-            {
-                Registrar($"NUEVO  {nuevo.Nombre}  (stock: {nuevo.Stock})");
-            }
-            else
-            {
-                MostrarEstado("No se cargó el producto nuevo.", Estilos.Advertencia);
+                return;
             }
 
-            numCantidad.Value = 1;
+            editor.NuevoProducto(codigo, cantidad);
+            panelLateral.Mostrar(editor);
+            txtCodigo.Enabled = false;
+            editor.Enfocar();
+            MostrarEstado($"El código {codigo} no está registrado: completá los datos a la derecha.", Estilos.Advertencia);
+        }
+
+        private void CerrarEditor()
+        {
+            panelLateral.Ocultar();
+            txtCodigo.Enabled = true;
             txtCodigo.Focus();
         }
 
@@ -99,6 +119,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Formularios
         {
             lstIngresos.Items.Insert(0, $"{DateTime.Now:HH:mm}   {texto}");
             MostrarEstado(texto, Estilos.Exito);
+            numCantidad.Value = 1;
+            txtCodigo.Focus();
         }
 
         private void MostrarEstado(string texto, Color color)

@@ -1,4 +1,4 @@
-namespace Proyecto_Kiosco_Rock_Roll.Formularios
+namespace Proyecto_Kiosco_Rock_Roll.Interfaz
 {
     /// <summary>Cuadros de diálogo comunes, para no repetir MessageBox.Show en todos lados.</summary>
     public static class Mensajes
