@@ -101,6 +101,12 @@ public sealed class InicializadorBaseDeDatos(ConexionSqlite conexion, GestorDeBa
 
         ALTER TABLE Ventas ADD COLUMN TurnoId INTEGER REFERENCES Turnos(Id);
         CREATE INDEX IX_Ventas_TurnoId ON Ventas(TurnoId);
+        """,
+
+        // 5: anulación de ventas. La venta no se borra: queda marcada con la fecha y el motivo.
+        """
+        ALTER TABLE Ventas ADD COLUMN AnuladaEn TEXT;
+        ALTER TABLE Ventas ADD COLUMN MotivoAnulacion TEXT;
         """
     ];
 

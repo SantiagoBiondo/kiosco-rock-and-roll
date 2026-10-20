@@ -53,6 +53,7 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddTransient<PanelMovimientoCaja>();
             servicios.AddTransient<PanelCerrarCaja>();
             servicios.AddTransient<ListadoVentasPorDia>();
+            servicios.AddTransient<PanelDetalleVenta>();
 
             // Una sola ventana con una instancia de cada vista durante toda la ejecución.
             servicios.AddSingleton<FormPrincipal>();

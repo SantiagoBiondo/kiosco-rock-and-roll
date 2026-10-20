@@ -3,16 +3,20 @@ using KioscoRockAndRoll.Dominio.Repositorios;
 
 namespace KioscoRockAndRoll.Dominio.Servicios;
 
-/// <summary>Totales de un día, separados por medio de pago.</summary>
+/// <summary>Totales de un día, separados por medio de pago. Las ventas anuladas se listan pero no suman.</summary>
 public sealed record ResumenDelDia(
     DateOnly Dia,
     IReadOnlyList<ResumenVenta> Ventas,
     IReadOnlyDictionary<MedioDePago, decimal> TotalPorMedio)
 {
-    public decimal Total => Ventas.Sum(v => v.Total);
+    public decimal Total => Vigentes.Sum(v => v.Total);
+    public int CantidadVigentes => Vigentes.Count();
+    public int CantidadAnuladas => Ventas.Count(v => v.Anulada);
+
+    private IEnumerable<ResumenVenta> Vigentes => Ventas.Where(v => !v.Anulada);
 }
 
-/// <summary>Casos de uso de la venta: cobrar y consultar lo vendido.</summary>
+/// <summary>Casos de uso de la venta: cobrar, anular y consultar lo vendido.</summary>
 public class VentaServicio(IVentaRepositorio ventas, CajaServicio caja, TimeProvider reloj)
 {
     /// <summary>
@@ -34,10 +38,28 @@ public class VentaServicio(IVentaRepositorio ventas, CajaServicio caja, TimeProv
         return venta;
     }
 
+    public DetalleVenta? Detalle(long ventaId) => ventas.ObtenerDetalle(ventaId);
+
+    /// <summary>Por qué no se puede anular la venta, o null si se puede.</summary>
+    public string? PorQueNoSePuedeAnular(ResumenVenta venta) => venta.PorQueNoSePuedeAnular(caja.TurnoAbierto);
+
+    /// <summary>
+    /// Anula una venta del turno abierto: deja de contar en la caja y en los totales,
+    /// y el stock de sus productos vuelve. La venta no se borra: queda marcada con el motivo.
+    /// </summary>
+    public void Anular(long ventaId, string motivo)
+    {
+        var detalle = ventas.ObtenerDetalle(ventaId)
+                      ?? throw new ReglaDeNegocioException("La venta no existe.");
+        var motivoValidado = detalle.Venta.VerificarAnulacion(caja.TurnoAbierto, motivo);
+        ventas.Anular(ventaId, motivoValidado, reloj.GetLocalNow().DateTime);
+    }
+
     public ResumenDelDia ResumenDelDia(DateOnly dia)
     {
         var delDia = ventas.ListarDelDia(dia);
         var porMedio = delDia
+            .Where(v => !v.Anulada)
             .GroupBy(v => v.MedioDePago)
             .ToDictionary(g => g.Key, g => g.Sum(v => v.Total));
         return new ResumenDelDia(dia, delDia, porMedio);

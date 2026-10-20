@@ -9,6 +9,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
         public static readonly Font Grande = new("Segoe UI", 16F);
         public static readonly Font Titulo = new("Segoe UI", 15F, FontStyle.Bold);
         public static readonly Font Total = new("Segoe UI", 28F, FontStyle.Bold);
+        public static readonly Font Tachada = new("Segoe UI", 11F, FontStyle.Strikeout);
 
         public static readonly Color FondoStockBajo = Color.FromArgb(255, 220, 220);
         public static readonly Color FondoPanelLateral = Color.FromArgb(243, 246, 250);

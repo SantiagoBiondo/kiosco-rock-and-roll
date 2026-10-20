@@ -10,5 +10,14 @@ public interface IVentaRepositorio
     /// </summary>
     void Registrar(Venta venta);
 
+    /// <summary>Las ventas del día, incluidas las anuladas.</summary>
     IReadOnlyList<ResumenVenta> ListarDelDia(DateOnly dia);
+
+    /// <summary>La venta con sus renglones, o null si no existe.</summary>
+    DetalleVenta? ObtenerDetalle(long ventaId);
+
+    /// <summary>
+    /// Marca la venta como anulada y devuelve el stock de sus productos, en una sola operación atómica.
+    /// </summary>
+    void Anular(long ventaId, string motivo, DateTime fecha);
 }

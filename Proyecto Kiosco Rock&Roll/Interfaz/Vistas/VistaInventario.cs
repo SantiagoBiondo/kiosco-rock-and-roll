@@ -73,10 +73,10 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
 
             grilla.CellFormatting += MostrarNombres;
             // Los productos con poco stock se pintan de rojo.
-            grilla.RowPrePaint += (_, e) =>
+            grilla.CellFormatting += (_, e) =>
             {
-                if (grilla.Rows[e.RowIndex].DataBoundItem is Producto { StockBajo: true })
-                    grilla.Rows[e.RowIndex].DefaultCellStyle.BackColor = Estilos.FondoStockBajo;
+                if (e.RowIndex >= 0 && grilla.Rows[e.RowIndex].DataBoundItem is Producto { StockBajo: true })
+                    e.CellStyle!.BackColor = Estilos.FondoStockBajo;
             };
             grilla.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) Editar(); };
 

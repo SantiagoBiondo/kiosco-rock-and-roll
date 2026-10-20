@@ -89,7 +89,7 @@ public sealed class SqliteCajaRepositorio(ConexionSqlite conexion) : ICajaReposi
             SELECT v.MedioPago, COUNT(DISTINCT v.Id), COALESCE(SUM(l.Cantidad * l.PrecioUnitarioCentavos), 0)
             FROM Ventas v
             JOIN VentaLineas l ON l.VentaId = v.Id
-            WHERE v.TurnoId = $turno
+            WHERE v.TurnoId = $turno AND v.AnuladaEn IS NULL
             GROUP BY v.MedioPago
             ORDER BY v.MedioPago
             """;

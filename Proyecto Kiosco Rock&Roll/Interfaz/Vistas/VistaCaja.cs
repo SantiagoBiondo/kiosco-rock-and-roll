@@ -12,10 +12,11 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
     {
         private readonly CajaServicio _caja;
 
-        private readonly PanelLateral panelLateral = new();
+        private readonly PanelLateral panelLateral = new(ancho: 500);
         private readonly PanelAbrirCaja panelAbrir;
         private readonly PanelMovimientoCaja panelMovimiento;
         private readonly PanelCerrarCaja panelCerrar;
+        private readonly PanelDetalleVenta panelDetalle;
         private readonly ListadoVentasPorDia ventasPorDia;
 
         private readonly Label lblEstado = new() { AutoSize = true, Font = Estilos.Titulo, Margin = new Padding(6, 12, 24, 3) };
@@ -43,13 +44,15 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
         private readonly DataGridView grillaTurnos = new();
 
         public VistaCaja(CajaServicio caja, ListadoVentasPorDia ventasPorDia,
-            PanelAbrirCaja panelAbrir, PanelMovimientoCaja panelMovimiento, PanelCerrarCaja panelCerrar)
+            PanelAbrirCaja panelAbrir, PanelMovimientoCaja panelMovimiento, PanelCerrarCaja panelCerrar,
+            PanelDetalleVenta panelDetalle)
         {
             _caja = caja;
             this.ventasPorDia = ventasPorDia;
             this.panelAbrir = panelAbrir;
             this.panelMovimiento = panelMovimiento;
             this.panelCerrar = panelCerrar;
+            this.panelDetalle = panelDetalle;
 
             // Barra de arriba: estado y acciones.
             var arriba = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6) };
@@ -125,6 +128,11 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             panelMovimiento.Cancelado += (_, _) => CerrarPanel();
             panelCerrar.Cerrada += (_, _) => CerrarPanel();
             panelCerrar.Cancelado += (_, _) => CerrarPanel();
+
+            // Detalle y anulación desde la pestaña "Ventas por día": al terminar se sigue en esa pestaña.
+            ventasPorDia.VentaElegida += (_, venta) => AbrirPanel(panelDetalle, () => panelDetalle.Mostrar(venta.Id));
+            panelDetalle.Anulada += (_, _) => CerrarPanel(volverAlTurno: false);
+            panelDetalle.Cerrado += (_, _) => CerrarPanel(volverAlTurno: false);
         }
 
         public override string Titulo => "Caja";
@@ -146,6 +154,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
                 panelAbrir.Dispose();
                 panelMovimiento.Dispose();
                 panelCerrar.Dispose();
+                panelDetalle.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -241,12 +250,13 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             iniciar();
         }
 
-        private void CerrarPanel()
+        private void CerrarPanel(bool volverAlTurno = true)
         {
             panelLateral.Ocultar();
-            pestanias.SelectedTab = tabTurno;
+            if (volverAlTurno)
+                pestanias.SelectedTab = tabTurno;
             Cargar();
-            pestanias.Focus();
+            pestanias.SelectedTab?.SelectNextControl(pestanias.SelectedTab, true, true, true, true);
         }
     }
 }
