@@ -19,7 +19,10 @@ public sealed class ServiciosConSqliteTests : IDisposable
     {
         _productos = new SqliteProductoRepositorio(_base.Conexion);
         _inventario = new InventarioServicio(_productos);
-        _ventas = new VentaServicio(new SqliteVentaRepositorio(_base.Conexion), new RelojFijo(Ahora));
+        var reloj = new RelojFijo(Ahora);
+        var caja = new CajaServicio(new SqliteCajaRepositorio(_base.Conexion), reloj);
+        caja.AbrirCaja(0); // para cobrar hace falta la caja abierta
+        _ventas = new VentaServicio(new SqliteVentaRepositorio(_base.Conexion), caja, reloj);
     }
 
     public void Dispose() => _base.Dispose();

@@ -72,6 +72,35 @@ public sealed class InicializadorBaseDeDatos(ConexionSqlite conexion, GestorDeBa
             Clave TEXT PRIMARY KEY,
             Valor TEXT NOT NULL
         );
+        """,
+
+        // 4: turnos de caja y movimientos de efectivo. Cada venta nueva queda asociada a su turno
+        // (las ventas anteriores a esta versión quedan sin turno).
+        """
+        CREATE TABLE Turnos (
+            Id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+            Apertura                TEXT    NOT NULL,
+            EfectivoInicialCentavos INTEGER NOT NULL,
+            Cierre                  TEXT,
+            EfectivoContadoCentavos INTEGER
+        );
+
+        -- Solo puede haber un turno abierto a la vez.
+        CREATE UNIQUE INDEX UX_Turnos_UnoAbierto ON Turnos((Cierre IS NULL)) WHERE Cierre IS NULL;
+
+        CREATE TABLE MovimientosCaja (
+            Id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            TurnoId       INTEGER NOT NULL REFERENCES Turnos(Id),
+            Fecha         TEXT    NOT NULL,
+            Tipo          INTEGER NOT NULL,
+            MontoCentavos INTEGER NOT NULL,
+            Motivo        TEXT    NOT NULL
+        );
+
+        CREATE INDEX IX_MovimientosCaja_TurnoId ON MovimientosCaja(TurnoId);
+
+        ALTER TABLE Ventas ADD COLUMN TurnoId INTEGER REFERENCES Turnos(Id);
+        CREATE INDEX IX_Ventas_TurnoId ON Ventas(TurnoId);
         """
     ];
 

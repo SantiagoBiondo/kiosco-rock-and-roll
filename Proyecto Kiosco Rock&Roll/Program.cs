@@ -38,6 +38,7 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddSingleton(TimeProvider.System);
             servicios.AddSingleton<InventarioServicio>();
             servicios.AddSingleton<VentaServicio>();
+            servicios.AddSingleton<CajaServicio>();
             servicios.AddSingleton<CatalogoServicio<Categoria>>();
             servicios.AddSingleton<CatalogoServicio<Proveedor>>();
 
@@ -48,13 +49,17 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddTransient<PanelCategorias>();
             servicios.AddTransient<PanelProveedores>();
             servicios.AddTransient<PanelPedido>();
+            servicios.AddTransient<PanelAbrirCaja>();
+            servicios.AddTransient<PanelMovimientoCaja>();
+            servicios.AddTransient<PanelCerrarCaja>();
+            servicios.AddTransient<ListadoVentasPorDia>();
 
             // Una sola ventana con una instancia de cada vista durante toda la ejecución.
             servicios.AddSingleton<FormPrincipal>();
             servicios.AddSingleton<VistaVenta>();
             servicios.AddSingleton<VistaInventario>();
             servicios.AddSingleton<VistaIngresoMercaderia>();
-            servicios.AddSingleton<VistaVentasDelDia>();
+            servicios.AddSingleton<VistaCaja>();
             servicios.AddSingleton<VistaBackups>();
             return servicios;
         }

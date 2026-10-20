@@ -13,11 +13,13 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
     {
         private readonly InventarioServicio _inventario;
         private readonly VentaServicio _ventas;
+        private readonly CajaServicio _caja;
         private readonly Carrito _carrito = new();
 
         private readonly PanelLateral panelLateral = new();
         private readonly BuscadorProducto buscador;
         private readonly EditorProducto editor;
+        private readonly PanelAbrirCaja panelAbrirCaja;
         private readonly PanelCobro panelCobro = new();
 
         private readonly TextBox txtCodigo = new() { Font = Estilos.Grande, Width = 420, PlaceholderText = "Escaneá o escribí el código" };
@@ -26,13 +28,15 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
         private readonly Label lblTotal = new() { Font = Estilos.Total, AutoSize = true };
         private readonly Label lblEstado = new() { AutoSize = true, Font = Estilos.Normal, Anchor = AnchorStyles.Left };
 
-        public VistaVenta(InventarioServicio inventario, VentaServicio ventas,
-            BuscadorProducto buscador, EditorProducto editor)
+        public VistaVenta(InventarioServicio inventario, VentaServicio ventas, CajaServicio caja,
+            BuscadorProducto buscador, EditorProducto editor, PanelAbrirCaja panelAbrirCaja)
         {
             _inventario = inventario;
             _ventas = ventas;
+            _caja = caja;
             this.buscador = buscador;
             this.editor = editor;
+            this.panelAbrirCaja = panelAbrirCaja;
 
             // Zona de escaneo.
             var escaneo = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6) };
@@ -104,6 +108,17 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             editor.Cancelado += (_, _) => { CerrarPanel(); MostrarEstado("No se dio de alta el producto.", SystemColors.GrayText); };
             panelCobro.Confirmado += (_, cobro) => Cobrar(cobro);
             panelCobro.Cancelado += (_, _) => CerrarPanel();
+            // Si se quiso cobrar con la caja cerrada: al abrirla, se sigue con el cobro.
+            panelAbrirCaja.Abierta += (_, turno) =>
+            {
+                MostrarEstado($"Caja abierta con {turno.EfectivoInicial:C2}.", Estilos.Exito);
+                AbrirCobro();
+            };
+            panelAbrirCaja.Cancelado += (_, _) =>
+            {
+                CerrarPanel();
+                MostrarEstado("Para cobrar hay que abrir la caja.", Estilos.Advertencia);
+            };
 
             DibujarCarrito();
         }
@@ -117,6 +132,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             // el carrito toma los datos nuevos.
             if (!_carrito.EstaVacio)
                 _carrito.Refrescar(_inventario.ObtenerPorId);
+            if (_caja.TurnoAbierto is null && !panelLateral.Abierto)
+                MostrarEstado("La caja está cerrada: se abre al cobrar la primera venta (o desde la sección Caja).", SystemColors.GrayText);
             EnfocarPanelOCodigo();
         }
 
@@ -140,6 +157,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
                 buscador.Dispose();
                 editor.Dispose();
                 panelCobro.Dispose();
+                panelAbrirCaja.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -260,6 +278,12 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             {
                 MostrarEstado("No hay productos para cobrar.", Estilos.Advertencia);
                 txtCodigo.Focus();
+                return;
+            }
+            if (_caja.TurnoAbierto is null)
+            {
+                AbrirPanel(panelAbrirCaja);
+                panelAbrirCaja.Iniciar("La caja está cerrada. Abrila para poder cobrar.");
                 return;
             }
             AbrirPanel(panelCobro);

@@ -1,10 +1,10 @@
 using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
 
-namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
+namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 {
-    /// <summary>Ventas de un día con totales por medio de pago (sirve para el cierre de caja).</summary>
-    public class VistaVentasDelDia : Vista
+    /// <summary>Ventas de un día con totales por medio de pago.</summary>
+    public class ListadoVentasPorDia : UserControl
     {
         private readonly VentaServicio _ventas;
 
@@ -12,9 +12,10 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
         private readonly DataGridView grilla = new();
         private readonly Label lblResumen = new() { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(8), Font = Estilos.Grande };
 
-        public VistaVentasDelDia(VentaServicio ventas)
+        public ListadoVentasPorDia(VentaServicio ventas)
         {
             _ventas = ventas;
+            Font = Estilos.Normal;
 
             var arriba = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6) };
             arriba.Controls.Add(new Label { Text = "Día:", AutoSize = true, Margin = new Padding(3, 6, 3, 3) });
@@ -36,16 +37,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             dtpDia.ValueChanged += (_, _) => Cargar();
         }
 
-        public override string Titulo => "Ventas del día";
-        public override Keys Atajo => Keys.F4;
-
-        public override void AlMostrar()
-        {
-            Cargar();
-            grilla.Focus();
-        }
-
-        private void Cargar()
+        public void Cargar()
         {
             var resumen = _ventas.ResumenDelDia(DateOnly.FromDateTime(dtpDia.Value));
             grilla.DataSource = resumen.Ventas.ToList();

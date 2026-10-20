@@ -13,8 +13,11 @@ public sealed class SqliteVentaRepositorio(ConexionSqlite conexion) : IVentaRepo
 
         using (var comandoVenta = db.CreateCommand())
         {
-            comandoVenta.CommandText = "INSERT INTO Ventas (Fecha, MedioPago) VALUES ($fecha, $medio) RETURNING Id";
+            comandoVenta.CommandText = """
+                INSERT INTO Ventas (Fecha, MedioPago, TurnoId) VALUES ($fecha, $medio, $turno) RETURNING Id
+                """;
             comandoVenta.Parameters.AddWithValue("$fecha", AFechaTexto(venta.Fecha));
+            comandoVenta.Parameters.AddWithValue("$turno", venta.TurnoId);
             comandoVenta.Parameters.AddWithValue("$medio", (int)venta.MedioDePago);
             venta.AsignarId((long)comandoVenta.ExecuteScalar()!);
         }

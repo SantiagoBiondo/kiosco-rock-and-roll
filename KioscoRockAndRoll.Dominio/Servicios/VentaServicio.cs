@@ -3,7 +3,7 @@ using KioscoRockAndRoll.Dominio.Repositorios;
 
 namespace KioscoRockAndRoll.Dominio.Servicios;
 
-/// <summary>Totales de un día, separados por medio de pago (para el cierre de caja).</summary>
+/// <summary>Totales de un día, separados por medio de pago.</summary>
 public sealed record ResumenDelDia(
     DateOnly Dia,
     IReadOnlyList<ResumenVenta> Ventas,
@@ -13,12 +13,17 @@ public sealed record ResumenDelDia(
 }
 
 /// <summary>Casos de uso de la venta: cobrar y consultar lo vendido.</summary>
-public class VentaServicio(IVentaRepositorio ventas, TimeProvider reloj)
+public class VentaServicio(IVentaRepositorio ventas, CajaServicio caja, TimeProvider reloj)
 {
-    /// <summary>Registra la venta, descuenta el stock y vacía el carrito.</summary>
+    /// <summary>
+    /// Registra la venta en el turno de caja abierto, descuenta el stock y vacía el carrito.
+    /// Si la caja está cerrada, no se puede cobrar.
+    /// </summary>
     public Venta Cobrar(Carrito carrito, Cobro cobro)
     {
-        var venta = Venta.DesdeCarrito(carrito, cobro, reloj.GetLocalNow().DateTime);
+        var turno = caja.TurnoAbierto
+                    ?? throw new ReglaDeNegocioException("La caja está cerrada. Abrila para poder cobrar.");
+        var venta = Venta.DesdeCarrito(carrito, cobro, turno, reloj.GetLocalNow().DateTime);
         ventas.Registrar(venta);
 
         // El repositorio ya descontó el stock en la base; reflejamos lo mismo en memoria.
