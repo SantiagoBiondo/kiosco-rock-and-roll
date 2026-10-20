@@ -480,3 +480,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Ejecutable publicado para el kiosco (se genera con el perfil de publicación Kiosco)
+publicar/
+# El perfil de publicación del kiosco no tiene datos sensibles: se versiona.
+!**/Properties/PublishProfiles/Kiosco.pubxml
