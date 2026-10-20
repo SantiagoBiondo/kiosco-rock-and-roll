@@ -1,0 +1,17 @@
+using KioscoRockAndRoll.Dominio.Repositorios;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace KioscoRockAndRoll.Datos;
+
+public static class RegistroDeServicios
+{
+    /// <summary>Registra la implementación SQLite de los repositorios.</summary>
+    public static IServiceCollection AddDatosSqlite(this IServiceCollection servicios, string rutaArchivo)
+    {
+        servicios.AddSingleton(new ConexionSqlite(rutaArchivo));
+        servicios.AddSingleton<InicializadorBaseDeDatos>();
+        servicios.AddSingleton<IProductoRepositorio, SqliteProductoRepositorio>();
+        servicios.AddSingleton<IVentaRepositorio, SqliteVentaRepositorio>();
+        return servicios;
+    }
+}
