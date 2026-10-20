@@ -50,9 +50,12 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
         producto.AsignarId((long)comando.ExecuteScalar()!);
     }
 
-    public void Actualizar(Producto producto)
+    public void Actualizar(Producto producto) => ActualizarVarios([producto]);
+
+    public void ActualizarVarios(IReadOnlyCollection<Producto> productos)
     {
         using var db = conexion.Abrir();
+        using var transaccion = db.BeginTransaction();
         using var comando = db.CreateCommand();
         comando.CommandText = """
             UPDATE Productos
@@ -60,9 +63,16 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
                 PrecioVentaCentavos = $venta, Stock = $stock, StockMinimo = $minimo
             WHERE Id = $id
             """;
-        CargarParametros(comando, producto);
-        comando.Parameters.AddWithValue("$id", producto.Id);
-        comando.ExecuteNonQuery();
+
+        foreach (var producto in productos)
+        {
+            comando.Parameters.Clear();
+            CargarParametros(comando, producto);
+            comando.Parameters.AddWithValue("$id", producto.Id);
+            comando.ExecuteNonQuery();
+        }
+
+        transaccion.Commit();
     }
 
     public void Eliminar(long id)

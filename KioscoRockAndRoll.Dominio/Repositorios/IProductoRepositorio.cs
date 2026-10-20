@@ -15,6 +15,9 @@ public interface IProductoRepositorio
 
     void Agregar(Producto producto);
     void Actualizar(Producto producto);
+
+    /// <summary>Guarda varios productos en una sola operación atómica.</summary>
+    void ActualizarVarios(IReadOnlyCollection<Producto> productos);
     void Eliminar(long id);
     bool TieneVentas(long id);
 }

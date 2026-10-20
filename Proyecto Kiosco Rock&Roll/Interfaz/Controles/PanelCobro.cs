@@ -9,7 +9,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         private decimal _total;
 
         private readonly Label lblTotal = Estilos.Etiqueta("", Estilos.Total);
-        private readonly ComboBox cmbMedio = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 250, Font = Estilos.Grande };
+        private readonly ComboBox cmbMedio = Estilos.Opciones(Enum.GetValues<MedioDePago>(), m => m.Descripcion(), 250);
         private readonly NumericUpDown numPagaCon = Estilos.CampoNumero(2);
         private readonly Label lblVuelto = Estilos.Etiqueta("", Estilos.Grande);
         private readonly Label lblError = new() { AutoSize = true, ForeColor = Color.Red, MaximumSize = new Size(400, 0) };
@@ -21,8 +21,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         {
             Font = Estilos.Normal;
             numPagaCon.Font = Estilos.Grande;
-            cmbMedio.DataSource = Enum.GetValues<MedioDePago>();
-            cmbMedio.Format += (_, e) => e.Value = ((MedioDePago)e.ListItem!).Descripcion();
+            cmbMedio.Font = Estilos.Grande;
 
             var tabla = new TableLayoutPanel { ColumnCount = 1, AutoSize = true, Dock = DockStyle.Top };
             tabla.Controls.Add(Estilos.Etiqueta("Cobrar", Estilos.Titulo));

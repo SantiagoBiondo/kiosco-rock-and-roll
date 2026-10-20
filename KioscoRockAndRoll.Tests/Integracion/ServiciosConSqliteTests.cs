@@ -139,6 +139,45 @@ public sealed class ServiciosConSqliteTests : IDisposable
         Assert.Null(_inventario.ObtenerPorId(coca.Id));
     }
 
+    [Fact]
+    public void AplicarAjuste_ActualizaSoloLosProductosIndicados()
+    {
+        var coca = CrearCoca();
+        var alfajor = _inventario.Crear(new DatosProducto("111", "Alfajor", 400, 700, 0, 0));
+        var chicle = _inventario.Crear(new DatosProducto("222", "Chicle", 100, 200, 0, 0));
+
+        var actualizados = _inventario.AplicarAjuste([alfajor.Id, chicle.Id],
+            new AjustePrecios(10, PreciosAAjustar.CostoYVenta, redondearVentaA: 10));
+
+        Assert.Equal(2, actualizados);
+        Assert.Equal(899.99m, _inventario.ObtenerPorId(coca.Id)!.PrecioVenta); // no se tocó
+        var alfajorLeido = _inventario.ObtenerPorId(alfajor.Id)!;
+        Assert.Equal(440m, alfajorLeido.PrecioCosto);
+        Assert.Equal(770m, alfajorLeido.PrecioVenta);
+        Assert.Equal(220m, _inventario.ObtenerPorId(chicle.Id)!.PrecioVenta);
+    }
+
+    [Fact]
+    public void PrevisualizarAjuste_NoModificaNada()
+    {
+        var coca = CrearCoca();
+
+        var cambios = _inventario.PrevisualizarAjuste([coca], new AjustePrecios(50, PreciosAAjustar.SoloVenta));
+
+        var cambio = Assert.Single(cambios);
+        Assert.Equal(899.99m, cambio.VentaAntes);
+        Assert.Equal(1349.99m, cambio.VentaDespues); // 1349.985 redondeado
+        Assert.Equal(899.99m, coca.PrecioVenta);
+        Assert.Equal(899.99m, _inventario.ObtenerPorId(coca.Id)!.PrecioVenta);
+    }
+
+    [Fact]
+    public void AplicarAjuste_SinProductos_Falla()
+    {
+        Assert.Throws<ReglaDeNegocioException>(() =>
+            _inventario.AplicarAjuste([], new AjustePrecios(10, PreciosAAjustar.CostoYVenta)));
+    }
+
     private sealed class RelojFijo(DateTimeOffset ahora) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => ahora;

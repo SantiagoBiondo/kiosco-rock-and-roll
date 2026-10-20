@@ -74,6 +74,13 @@ public class Producto
         StockMinimo = stockMinimo;
     }
 
+    public void AjustarPrecios(AjustePrecios ajuste)
+    {
+        ArgumentNullException.ThrowIfNull(ajuste);
+        PrecioCosto = ajuste.NuevoCosto(PrecioCosto);
+        PrecioVenta = ajuste.NuevaVenta(PrecioVenta);
+    }
+
     public void IngresarStock(int cantidad)
     {
         if (cantidad <= 0)

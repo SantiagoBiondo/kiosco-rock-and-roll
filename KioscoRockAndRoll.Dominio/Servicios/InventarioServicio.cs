@@ -69,6 +69,39 @@ public class InventarioServicio(IProductoRepositorio productos)
         return producto;
     }
 
+    /// <summary>Calcula cómo quedarían los precios, sin modificar nada.</summary>
+    public IReadOnlyList<CambioDePrecio> PrevisualizarAjuste(IEnumerable<Producto> aAjustar, AjustePrecios ajuste) =>
+        aAjustar
+            .Select(p => new CambioDePrecio(p.Id, p.Nombre,
+                p.PrecioCosto, ajuste.NuevoCosto(p.PrecioCosto),
+                p.PrecioVenta, ajuste.NuevaVenta(p.PrecioVenta)))
+            .ToList();
+
+    /// <summary>
+    /// Aplica el ajuste a los productos indicados. Se guardan todos juntos:
+    /// si algo falla, no queda ninguno a medio actualizar.
+    /// </summary>
+    /// <returns>Cuántos productos se actualizaron.</returns>
+    public int AplicarAjuste(IReadOnlyCollection<long> productoIds, AjustePrecios ajuste)
+    {
+        ArgumentNullException.ThrowIfNull(ajuste);
+        if (productoIds.Count == 0)
+            throw new ReglaDeNegocioException("No hay productos para actualizar.");
+
+        // Se leen de nuevo para trabajar con los datos más recientes.
+        var aActualizar = productoIds
+            .Distinct()
+            .Select(productos.ObtenerPorId)
+            .OfType<Producto>()
+            .ToList();
+
+        foreach (var producto in aActualizar)
+            producto.AjustarPrecios(ajuste);
+
+        productos.ActualizarVarios(aActualizar);
+        return aActualizar.Count;
+    }
+
     private void ValidarCodigoLibre(string codigoBarras, long? idActual)
     {
         var existente = productos.ObtenerPorCodigo(codigoBarras?.Trim() ?? "");

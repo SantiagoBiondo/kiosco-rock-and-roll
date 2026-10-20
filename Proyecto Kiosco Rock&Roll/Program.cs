@@ -13,14 +13,14 @@ namespace Proyecto_Kiosco_Rock_Roll
         ///  The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
             ConfigurarManejoDeErrores();
 
-            using var proveedor = ConfigurarServicios().BuildServiceProvider(validateScopes: true);
+            using var proveedor = ConfigurarServicios(RutaBase(args)).BuildServiceProvider(validateScopes: true);
             proveedor.GetRequiredService<InicializadorBaseDeDatos>().Inicializar();
 
             Application.Run(proveedor.GetRequiredService<FormPrincipal>());
@@ -29,14 +29,8 @@ namespace Proyecto_Kiosco_Rock_Roll
         /// <summary>
         /// Raíz de composición: el único lugar donde se decide qué implementación usa cada interfaz.
         /// </summary>
-        private static ServiceCollection ConfigurarServicios()
+        private static ServiceCollection ConfigurarServicios(string rutaBase)
         {
-            // La base se guarda en %LOCALAPPDATA%\KioscoRockAndRoll\kiosco.db.
-            // Para hacer un backup alcanza con copiar ese archivo.
-            var rutaBase = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "KioscoRockAndRoll", "kiosco.db");
-
             var servicios = new ServiceCollection();
             servicios.AddDatosSqlite(rutaBase);
             servicios.AddSingleton(TimeProvider.System);
@@ -50,6 +44,22 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddSingleton<VistaIngresoMercaderia>();
             servicios.AddSingleton<VistaVentasDelDia>();
             return servicios;
+        }
+
+        /// <summary>
+        /// Por defecto la base se guarda en %LOCALAPPDATA%\KioscoRockAndRoll\kiosco.db
+        /// (para hacer un backup alcanza con copiar ese archivo).
+        /// Con "--base otra.db" se puede usar otra, por ejemplo para practicar sin tocar la real.
+        /// </summary>
+        private static string RutaBase(string[] args)
+        {
+            var indice = Array.IndexOf(args, "--base");
+            if (indice >= 0 && indice + 1 < args.Length)
+                return Path.GetFullPath(args[indice + 1]);
+
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "KioscoRockAndRoll", "kiosco.db");
         }
 
         // Red de seguridad: si algo falla y nadie lo atrapó, se muestra un mensaje en vez de cerrar el programa.

@@ -76,6 +76,20 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
             };
         }
 
+        /// <summary>Lista desplegable de opciones fijas, mostrando cada una con un texto a elección.</summary>
+        public static ComboBox Opciones<T>(IEnumerable<T> opciones, Func<T, string> texto, int ancho = 260) where T : notnull
+        {
+            var combo = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Width = ancho,
+                FormattingEnabled = true, // sin esto WinForms ignora el evento Format
+                DataSource = opciones.ToList()
+            };
+            combo.Format += (_, e) => e.Value = texto((T)e.ListItem!);
+            return combo;
+        }
+
         /// <summary>
         /// Lee lo que está escrito en el campo aunque todavía no se haya confirmado
         /// (Value recién se actualiza al salir del campo).
