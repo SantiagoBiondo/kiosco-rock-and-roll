@@ -5,7 +5,8 @@ namespace KioscoRockAndRoll.Datos;
 /// La versión del esquema se guarda en la base misma (PRAGMA user_version), así una base
 /// vieja se actualiza sola al abrir el programa, sin perder datos.
 /// </summary>
-public sealed class InicializadorBaseDeDatos(ConexionSqlite conexion)
+/// <param name="backups">Si se indica, antes de migrar una base existente se guarda una copia.</param>
+public sealed class InicializadorBaseDeDatos(ConexionSqlite conexion, GestorDeBackups? backups = null)
 {
     /// <summary>
     /// Cada migración lleva la base de la versión N-1 a la N. Nunca se modifica una que ya
@@ -63,6 +64,14 @@ public sealed class InicializadorBaseDeDatos(ConexionSqlite conexion)
 
         CREATE INDEX IX_Productos_CategoriaId ON Productos(CategoriaId);
         CREATE INDEX IX_Productos_ProveedorId ON Productos(ProveedorId);
+        """,
+
+        // 3: ajustes del programa (por ejemplo, la carpeta extra de backups).
+        """
+        CREATE TABLE Ajustes (
+            Clave TEXT PRIMARY KEY,
+            Valor TEXT NOT NULL
+        );
         """
     ];
 
@@ -79,6 +88,10 @@ public sealed class InicializadorBaseDeDatos(ConexionSqlite conexion)
         if (version > VersionActual)
             throw new InvalidOperationException(
                 "La base de datos es de una versión más nueva del programa. Actualizá el programa para abrirla.");
+
+        // Una base con datos que se va a actualizar: primero, una copia por las dudas.
+        if (version > 0 && version < VersionActual)
+            backups?.HacerCopiaEspecial($"antes-de-migrar-v{version}");
 
         // Cada migración va en su propia transacción junto con el cambio de versión:
         // si falla, la base queda como estaba.

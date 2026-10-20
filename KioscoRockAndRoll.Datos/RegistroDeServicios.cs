@@ -11,6 +11,8 @@ public static class RegistroDeServicios
     {
         servicios.AddSingleton(new ConexionSqlite(rutaArchivo));
         servicios.AddSingleton<InicializadorBaseDeDatos>();
+        servicios.AddSingleton<Ajustes>();
+        servicios.AddSingleton<GestorDeBackups>();
         servicios.AddSingleton<IProductoRepositorio, SqliteProductoRepositorio>();
         servicios.AddSingleton<IVentaRepositorio, SqliteVentaRepositorio>();
         servicios.AddSingleton<ICatalogoRepositorio<Categoria>, SqliteCategoriaRepositorio>();

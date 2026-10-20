@@ -1,19 +1,24 @@
+using KioscoRockAndRoll.Datos;
 using Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas;
 
 namespace Proyecto_Kiosco_Rock_Roll.Interfaz
 {
     /// <summary>
     /// La única ventana del programa: una barra de secciones arriba y la vista activa abajo.
+    /// Al cerrarse hace el backup automático del día.
     /// </summary>
     public class FormPrincipal : Form
     {
+        private readonly GestorDeBackups _backups;
         private readonly Panel contenedor = new() { Dock = DockStyle.Fill };
         private readonly Dictionary<Vista, Button> _botones = [];
         private Vista? _actual;
 
-        public FormPrincipal(VistaVenta venta, VistaInventario inventario,
-            VistaIngresoMercaderia ingreso, VistaVentasDelDia ventasDelDia)
+        public FormPrincipal(GestorDeBackups backups, VistaVenta venta, VistaInventario inventario,
+            VistaIngresoMercaderia ingreso, VistaVentasDelDia ventasDelDia, VistaBackups vistaBackups)
         {
+            _backups = backups;
+
             Text = "Kiosco Rock & Roll";
             Font = Estilos.Normal;
             Size = new Size(1200, 750);
@@ -22,11 +27,11 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
             WindowState = FormWindowState.Maximized;
 
             var barra = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, BackColor = Estilos.FondoBarra, Padding = new Padding(6, 6, 6, 0) };
-            foreach (var vista in new Vista[] { venta, inventario, ingreso, ventasDelDia })
+            foreach (var vista in new Vista[] { venta, inventario, ingreso, ventasDelDia, vistaBackups })
             {
                 var boton = new Button
                 {
-                    Text = $"{vista.Titulo}  ({vista.Atajo})",
+                    Text = vista.Atajo == Keys.None ? vista.Titulo : $"{vista.Titulo}  ({vista.Atajo})",
                     AutoSize = true,
                     Height = 46,
                     Padding = new Padding(14, 0, 14, 0),
@@ -47,6 +52,18 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
 
             Load += (_, _) => Navegar(venta);
             Shown += (_, _) => _actual?.AlMostrar(); // recién acá se puede poner el foco
+            FormClosing += (_, _) => HacerBackupAlCerrar();
+        }
+
+        private void HacerBackupAlCerrar()
+        {
+            Cursor = Cursors.WaitCursor;
+            var resultado = _backups.HacerBackup();
+            Cursor = Cursors.Default;
+
+            if (!resultado.TodoBien)
+                Mensajes.Advertencia(this, VistaBackups.DescribirErrores(resultado) +
+                                           "\n\nPodés revisarlo en la sección Backups la próxima vez que abras el programa.");
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -55,7 +72,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
             if (base.ProcessCmdKey(ref msg, keyData))
                 return true;
 
-            var destino = _botones.Keys.FirstOrDefault(v => v.Atajo == keyData);
+            var destino = _botones.Keys.FirstOrDefault(v => v.Atajo != Keys.None && v.Atajo == keyData);
             if (destino == null)
                 return false;
             Navegar(destino);
