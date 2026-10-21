@@ -11,12 +11,37 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
         public static readonly Font Total = new("Segoe UI", 28F, FontStyle.Bold);
         public static readonly Font Tachada = new("Segoe UI", 11F, FontStyle.Strikeout);
 
-        public static readonly Color FondoStockBajo = Color.FromArgb(255, 220, 220);
-        public static readonly Color FondoPanelLateral = Color.FromArgb(243, 246, 250);
-        public static readonly Color FondoBarra = Color.FromArgb(32, 36, 44);
-        public static readonly Color SeccionActiva = Color.FromArgb(220, 53, 69);
-        public static readonly Color Advertencia = Color.DarkOrange;
-        public static readonly Color Exito = Color.ForestGreen;
+        // ---------- Tema claro u oscuro ----------
+
+        /// <summary>Si la interfaz usa el tema oscuro. Se decide una vez, al arrancar (ver <see cref="AplicarTema"/>).</summary>
+        public static bool Oscuro { get; private set; }
+
+        /// <summary>
+        /// Elige el tema. Tiene que llamarse antes de crear cualquier ventana: Windows define
+        /// los colores de los controles al crearlos, por eso cambiar de tema pide reiniciar.
+        /// </summary>
+        public static void AplicarTema(bool oscuro)
+        {
+            Oscuro = oscuro;
+#pragma warning disable WFO5001 // El modo oscuro de WinForms todavía está marcado como experimental.
+            Application.SetColorMode(oscuro ? SystemColorMode.Dark : SystemColorMode.Classic);
+#pragma warning restore WFO5001
+        }
+
+        // Fondos.
+        public static Color FondoStockBajo => Oscuro ? Color.FromArgb(92, 38, 42) : Color.FromArgb(255, 220, 220);
+        public static Color FondoPanelLateral => Oscuro ? Color.FromArgb(45, 45, 48) : Color.FromArgb(243, 246, 250);
+        public static Color FondoBarra => Oscuro ? Color.FromArgb(20, 20, 22) : Color.FromArgb(32, 36, 44);
+        public static Color SeccionActiva => Color.FromArgb(220, 53, 69);
+
+        // Botones destacados (siempre con letra blanca).
+        public static Color FondoBotonPrincipal => Color.ForestGreen;
+        public static Color FondoBotonPeligro => Color.Firebrick;
+
+        // Colores de texto: en el tema oscuro, más claros para que se lean sobre fondo oscuro.
+        public static Color Exito => Oscuro ? Color.FromArgb(110, 205, 110) : Color.ForestGreen;
+        public static Color Advertencia => Color.DarkOrange;
+        public static Color Error => Oscuro ? Color.FromArgb(255, 110, 110) : Color.Red;
 
         public static void ConfigurarGrilla(DataGridView grilla)
         {
@@ -32,6 +57,21 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
             grilla.Font = Normal;
             grilla.RowTemplate.Height = 32;
             grilla.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+
+            if (Oscuro)
+            {
+                // La grilla no toma sola los colores oscuros: se los damos a mano.
+                grilla.BackgroundColor = Color.FromArgb(30, 30, 30);
+                grilla.GridColor = Color.FromArgb(62, 62, 66);
+                grilla.EnableHeadersVisualStyles = false;
+                grilla.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(45, 45, 48);
+                grilla.ColumnHeadersDefaultCellStyle.ForeColor = Color.Gainsboro;
+                grilla.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(45, 45, 48);
+                grilla.DefaultCellStyle.BackColor = Color.FromArgb(37, 37, 38);
+                grilla.DefaultCellStyle.ForeColor = Color.Gainsboro;
+                grilla.DefaultCellStyle.SelectionBackColor = Color.FromArgb(0, 90, 158);
+                grilla.DefaultCellStyle.SelectionForeColor = Color.White;
+            }
         }
 
         public static DataGridViewTextBoxColumn Columna(

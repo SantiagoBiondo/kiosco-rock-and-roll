@@ -51,13 +51,13 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             grilla.DataError += (_, e) =>
             {
                 e.Cancel = true;
-                MostrarMensaje("La cantidad tiene que ser un número entero, 0 o más.", Color.Red);
+                MostrarMensaje("La cantidad tiene que ser un número entero, 0 o más.", Estilos.Error);
             };
 
             var abajo = new TableLayoutPanel { ColumnCount = 1, AutoSize = true, Dock = DockStyle.Bottom };
             var botones = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
             var btnCopiar = Estilos.Boton("Copiar pedido (Enter)", (_, _) => Copiar(), 210);
-            btnCopiar.BackColor = Estilos.Exito;
+            btnCopiar.BackColor = Estilos.FondoBotonPrincipal;
             btnCopiar.ForeColor = Color.White;
             botones.Controls.Add(btnCopiar);
             botones.Controls.Add(Estilos.Boton("Cerrar (Esc)", (_, _) => Cerrado?.Invoke(this, EventArgs.Empty), 150));

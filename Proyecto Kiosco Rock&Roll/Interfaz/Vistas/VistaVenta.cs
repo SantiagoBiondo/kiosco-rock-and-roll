@@ -87,7 +87,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             var btnCobrar = Estilos.Boton("COBRAR (F12)", (_, _) => AbrirCobro(), 200);
             btnCobrar.Height = 60;
             btnCobrar.Font = Estilos.Grande;
-            btnCobrar.BackColor = Estilos.Exito;
+            btnCobrar.BackColor = Estilos.FondoBotonPrincipal;
             btnCobrar.ForeColor = Color.White;
             totalYCobro.Controls.Add(btnCobrar);
 
@@ -182,7 +182,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             if (!CodigoEscaneado.TryInterpretar(texto, out var escaneado))
             {
                 if (texto.Trim() != "")
-                    MostrarEstado("No se entendió el código. Usá \"cantidad*código\", por ejemplo 3*779123.", Color.Red);
+                    MostrarEstado("No se entendió el código. Usá \"cantidad*código\", por ejemplo 3*779123.", Estilos.Error);
                 return;
             }
 
@@ -239,7 +239,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
                 return;
             if (!int.TryParse(e.FormattedValue?.ToString(), out var cantidad) || cantidad < 0)
             {
-                MostrarEstado("La cantidad tiene que ser un número entero.", Color.Red);
+                MostrarEstado("La cantidad tiene que ser un número entero.", Estilos.Error);
                 e.Cancel = true;
             }
         }

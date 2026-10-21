@@ -30,7 +30,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         private readonly NumericUpDown numPagaCon = Estilos.CampoNumero(2);
         private readonly Label lblVuelto = Estilos.Etiqueta("", Estilos.Grande);
         private readonly CheckBox chkTicket = new() { Text = "Imprimir ticket", AutoSize = true, Font = Estilos.Grande, Margin = new Padding(3, 10, 3, 3) };
-        private readonly Label lblError = new() { AutoSize = true, ForeColor = Color.Red, MaximumSize = new Size(400, 0) };
+        private readonly Label lblError = new() { AutoSize = true, ForeColor = Estilos.Error, MaximumSize = new Size(400, 0) };
 
         public event EventHandler<Cobro>? Confirmado;
         public event EventHandler? Cancelado;
@@ -72,7 +72,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
             var botones = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0, 12, 0, 0) };
             var btnConfirmar = Estilos.Boton("Confirmar (Enter)", (_, _) => Confirmar(), 180);
-            btnConfirmar.BackColor = Estilos.Exito;
+            btnConfirmar.BackColor = Estilos.FondoBotonPrincipal;
             btnConfirmar.ForeColor = Color.White;
             botones.Controls.Add(btnConfirmar);
             botones.Controls.Add(Estilos.Boton("Volver (Esc)", (_, _) => Cancelado?.Invoke(this, EventArgs.Empty), 150));
@@ -152,7 +152,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
                 : MedioElegido == MedioDePago.Efectivo ? _total : 0;
 
             lblResto.Text = restoEnEfectivo >= 0 ? restoEnEfectivo.ToString("C2") : $"Te pasaste {-restoEnEfectivo:C2}";
-            lblResto.ForeColor = restoEnEfectivo >= 0 ? SystemColors.ControlText : Color.Red;
+            lblResto.ForeColor = restoEnEfectivo >= 0 ? SystemColors.ControlText : Estilos.Error;
 
             var hayEfectivo = restoEnEfectivo > 0;
             numPagaCon.Enabled = lblPagaCon.Enabled = hayEfectivo;
@@ -166,7 +166,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             var pagaCon = numPagaCon.ValorTipeado();
             var vuelto = pagaCon == 0 ? 0 : pagaCon - restoEnEfectivo;
             lblVuelto.Text = vuelto >= 0 ? vuelto.ToString("C2") : $"Faltan {-vuelto:C2}";
-            lblVuelto.ForeColor = vuelto >= 0 ? Estilos.Exito : Color.Red;
+            lblVuelto.ForeColor = vuelto >= 0 ? Estilos.Exito : Estilos.Error;
         }
 
         private void Confirmar()

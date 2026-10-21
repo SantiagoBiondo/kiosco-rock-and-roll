@@ -27,6 +27,9 @@ namespace Proyecto_Kiosco_Rock_Roll
             using var proveedor = ConfigurarServicios(RutaBase(args)).BuildServiceProvider(validateScopes: true);
             proveedor.GetRequiredService<InicializadorBaseDeDatos>().Inicializar();
 
+            // El tema se elige antes de crear la primera ventana.
+            Estilos.AplicarTema(proveedor.GetRequiredService<AjustesDeApariencia>().TemaOscuro);
+
             Application.Run(proveedor.GetRequiredService<FormPrincipal>());
         }
 

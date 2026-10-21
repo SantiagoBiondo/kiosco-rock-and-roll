@@ -39,6 +39,17 @@ public sealed class TicketConSqliteTests : IDisposable
     }
 
     [Fact]
+    public void TemaOscuro_PorDefectoNo_YSeGuarda()
+    {
+        var apariencia = new AjustesDeApariencia(new Ajustes(_base.Conexion));
+        Assert.False(apariencia.TemaOscuro);
+
+        apariencia.TemaOscuro = true;
+
+        Assert.True(new AjustesDeApariencia(new Ajustes(_base.Conexion)).TemaOscuro);
+    }
+
+    [Fact]
     public void Ticket_DeUnaVentaReal_YSuCopia()
     {
         var reloj = TimeProvider.System;

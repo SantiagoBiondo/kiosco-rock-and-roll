@@ -61,7 +61,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
             var botones = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(0, 8, 0, 0) };
             var btnAplicar = Estilos.Boton("Aplicar (Enter)", (_, _) => Aplicar(), 160);
-            btnAplicar.BackColor = Estilos.Exito;
+            btnAplicar.BackColor = Estilos.FondoBotonPrincipal;
             btnAplicar.ForeColor = Color.White;
             botones.Controls.Add(btnAplicar);
             botones.Controls.Add(Estilos.Boton("Cancelar (Esc)", (_, _) => Cancelado?.Invoke(this, EventArgs.Empty), 160));
@@ -150,7 +150,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             if (LeerAjuste(out var error) is not { } ajuste)
             {
                 lblResumen.Text = error;
-                lblResumen.ForeColor = Color.Red;
+                lblResumen.ForeColor = Estilos.Error;
                 return;
             }
 
@@ -168,7 +168,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             catch (ReglaDeNegocioException ex)
             {
                 lblResumen.Text = ex.Message;
-                lblResumen.ForeColor = Color.Red;
+                lblResumen.ForeColor = Estilos.Error;
             }
         }
     }

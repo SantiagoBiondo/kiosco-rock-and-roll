@@ -124,7 +124,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             {
                 // Lo más común: el PDF está abierto en otro programa y no se puede reemplazar.
                 lblEstado.Text = $"No se pudo guardar el PDF: {ex.Message}";
-                lblEstado.ForeColor = Color.Red;
+                lblEstado.ForeColor = Estilos.Error;
             }
         }
     }

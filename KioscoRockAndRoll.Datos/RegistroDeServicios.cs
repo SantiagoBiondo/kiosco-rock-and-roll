@@ -13,6 +13,7 @@ public static class RegistroDeServicios
         servicios.AddSingleton<InicializadorBaseDeDatos>();
         servicios.AddSingleton<Ajustes>();
         servicios.AddSingleton<AjustesDeTicket>();
+        servicios.AddSingleton<AjustesDeApariencia>();
         servicios.AddSingleton<GestorDeBackups>();
         servicios.AddSingleton<IProductoRepositorio, SqliteProductoRepositorio>();
         servicios.AddSingleton<IVentaRepositorio, SqliteVentaRepositorio>();

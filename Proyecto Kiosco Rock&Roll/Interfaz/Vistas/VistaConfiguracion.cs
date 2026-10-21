@@ -5,15 +5,20 @@ using Proyecto_Kiosco_Rock_Roll.Interfaz.Impresion;
 namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
 {
     /// <summary>
-    /// Configuración de la impresora de tickets: cuál usar, de qué ancho es el papel y si
-    /// se imprime siempre al cobrar. Los cambios se guardan apenas se hacen.
+    /// Configuración: la impresora de tickets (cuál usar, de qué ancho es el papel y si se imprime
+    /// siempre al cobrar) y la apariencia (tema claro u oscuro). Los cambios se guardan apenas se hacen.
     /// </summary>
     public class VistaConfiguracion : Vista
     {
         private const string Ninguna = "(ninguna: no imprimir tickets)";
 
         private readonly AjustesDeTicket _ajustes;
+        private readonly AjustesDeApariencia _apariencia;
         private bool _cargando;
+
+        private readonly ComboBox cmbTema = Estilos.Opciones(new[] { false, true }, oscuro => oscuro ? "Oscuro" : "Claro", 200);
+        private readonly Label lblTema = new() { AutoSize = true, MaximumSize = new Size(620, 0), Margin = new Padding(3, 8, 3, 3) };
+        private readonly Button btnReiniciar;
 
         private readonly ComboBox cmbImpresora = Estilos.Opciones<Opcion<string?>>([], o => o.Texto, 420);
         private readonly ComboBox cmbPapel = Estilos.Opciones(Enum.GetValues<AnchoDePapel>(),
@@ -30,16 +35,19 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             Multiline = true,
             ReadOnly = true,
             Font = new Font("Consolas", 11F),
+            // Siempre blanco con letra negra, también en el tema oscuro: representa el papel del ticket.
             BackColor = Color.White,
+            ForeColor = Color.Black,
             ScrollBars = ScrollBars.Vertical,
             Width = 520,
             Height = 480,
             TabStop = false
         };
 
-        public VistaConfiguracion(AjustesDeTicket ajustes)
+        public VistaConfiguracion(AjustesDeTicket ajustes, AjustesDeApariencia apariencia)
         {
             _ajustes = ajustes;
+            _apariencia = apariencia;
 
             var opciones = new TableLayoutPanel { ColumnCount = 1, AutoSize = true, Dock = DockStyle.Left, Padding = new Padding(16) };
             opciones.Controls.Add(Estilos.Etiqueta("Impresora de tickets", Estilos.Titulo));
@@ -66,6 +74,17 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             opciones.Controls.Add(btnPrueba);
             opciones.Controls.Add(lblEstado);
 
+            // Apariencia.
+            var tituloApariencia = Estilos.Etiqueta("Apariencia", Estilos.Titulo);
+            tituloApariencia.Margin = new Padding(3, 32, 3, 8);
+            opciones.Controls.Add(tituloApariencia);
+            opciones.Controls.Add(Estilos.Etiqueta("Tema"));
+            opciones.Controls.Add(cmbTema);
+            opciones.Controls.Add(lblTema);
+            btnReiniciar = Estilos.Boton("Reiniciar ahora", (_, _) => Application.Restart(), 180);
+            opciones.Controls.Add(btnReiniciar);
+            cmbTema.SelectedIndexChanged += (_, _) => CambiarTema();
+
             var vistaPrevia = new TableLayoutPanel { ColumnCount = 1, AutoSize = true, Dock = DockStyle.Left, Padding = new Padding(16) };
             vistaPrevia.Controls.Add(Estilos.Etiqueta("Así sale el ticket", Estilos.Titulo));
             vistaPrevia.Controls.Add(txtVistaPrevia);
@@ -84,7 +103,35 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
         public override void AlMostrar()
         {
             CargarImpresoras();
+            CargarTema();
             cmbImpresora.Focus();
+        }
+
+        private void CargarTema()
+        {
+            _cargando = true;
+            cmbTema.SelectedItem = _apariencia.TemaOscuro;
+            _cargando = false;
+            MostrarAvisoDeTema();
+        }
+
+        private void CambiarTema()
+        {
+            if (_cargando || cmbTema.SelectedItem is not bool oscuro)
+                return;
+            _apariencia.TemaOscuro = oscuro;
+            MostrarAvisoDeTema();
+        }
+
+        // El tema se aplica al abrir el programa: si el elegido no es el que se está usando, hay que reiniciar.
+        private void MostrarAvisoDeTema()
+        {
+            var hayQueReiniciar = _apariencia.TemaOscuro != Estilos.Oscuro;
+            lblTema.Text = hayQueReiniciar
+                ? "Guardado. El cambio se ve al reiniciar el programa (no se pierde nada)."
+                : "Los colores del programa. Si te cansa la vista o la pantalla es muy brillante, probá el oscuro.";
+            lblTema.ForeColor = hayQueReiniciar ? Estilos.Advertencia : SystemColors.GrayText;
+            btnReiniciar.Visible = hayQueReiniciar;
         }
 
         /// <summary>Lista las impresoras de Windows y muestra la configuración guardada.</summary>
@@ -144,7 +191,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             }
             catch (NoSePudoImprimirException ex)
             {
-                MostrarEstado(ex.Message, Color.Red);
+                MostrarEstado(ex.Message, Estilos.Error);
             }
             finally
             {

@@ -188,7 +188,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             }
             catch (ReglaDeNegocioException ex)
             {
-                MostrarMensaje(ex.Message, Color.Red);
+                MostrarMensaje(ex.Message, Estilos.Error);
             }
         }
 

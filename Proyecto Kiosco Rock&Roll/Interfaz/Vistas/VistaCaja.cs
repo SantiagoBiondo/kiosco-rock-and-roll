@@ -133,7 +133,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
                 if (cierre.RutaPdf is { } ruta)
                     MostrarAviso($"PDF guardado en {ruta}", Estilos.Exito);
                 else if (cierre.ErrorPdf is { } error)
-                    MostrarAviso($"La caja se cerró, pero no se pudo guardar el PDF: {error}", Color.Red);
+                    MostrarAviso($"La caja se cerró, pero no se pudo guardar el PDF: {error}", Estilos.Error);
             };
             panelCerrar.Cancelado += (_, _) => CerrarPanel();
 
@@ -231,7 +231,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
                 lblContado.Text = resumen.EfectivoContado?.ToString("C2");
                 var diferencia = resumen.Diferencia ?? 0;
                 lblDiferencia.Text = ResumenTurno.DescribirDiferencia(diferencia);
-                lblDiferencia.ForeColor = diferencia == 0 ? Estilos.Exito : diferencia > 0 ? Estilos.Advertencia : Color.Red;
+                lblDiferencia.ForeColor = diferencia == 0 ? Estilos.Exito : diferencia > 0 ? Estilos.Advertencia : Estilos.Error;
             }
 
             var otros = resumen.Ventas.Where(v => v.Medio != MedioDePago.Efectivo).ToList();
@@ -248,7 +248,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             if (grillaTurnos.Columns[e.ColumnIndex].DataPropertyName != nameof(ResumenTurno.Diferencia) || e.Value is not decimal diferencia)
                 return;
             e.Value = ResumenTurno.DescribirDiferencia(diferencia);
-            e.CellStyle!.ForeColor = diferencia == 0 ? Estilos.Exito : diferencia > 0 ? Estilos.Advertencia : Color.Red;
+            e.CellStyle!.ForeColor = diferencia == 0 ? Estilos.Exito : diferencia > 0 ? Estilos.Advertencia : Estilos.Error;
             e.FormattingApplied = true;
         }
 

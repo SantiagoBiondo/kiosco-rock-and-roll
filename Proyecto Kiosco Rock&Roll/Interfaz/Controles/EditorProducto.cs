@@ -25,7 +25,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         private readonly ComboBox cmbCategoria = Estilos.Opciones<Opcion<long?>>([], o => o.Texto, 220);
         private readonly ComboBox cmbProveedor = Estilos.Opciones<Opcion<long?>>([], o => o.Texto, 220);
         private readonly Label lblMargen = Estilos.Etiqueta("");
-        private readonly Label lblError = new() { AutoSize = true, ForeColor = Color.Red, MaximumSize = new Size(400, 0) };
+        private readonly Label lblError = new() { AutoSize = true, ForeColor = Estilos.Error, MaximumSize = new Size(400, 0) };
 
         /// <summary>Se guardó el producto (nuevo o editado).</summary>
         public event EventHandler<Producto>? Guardado;
@@ -142,7 +142,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
             var margen = (venta - costo) / costo;
             lblMargen.Text = margen < 0 ? $"¡Vende a pérdida! ({margen:P0})" : $"Ganancia: {margen:P0}";
-            lblMargen.ForeColor = margen < 0 ? Color.Red : Estilos.Exito;
+            lblMargen.ForeColor = margen < 0 ? Estilos.Error : Estilos.Exito;
         }
 
         private void Guardar()

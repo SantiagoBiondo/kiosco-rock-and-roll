@@ -53,7 +53,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             anular.Controls.Add(Estilos.Etiqueta("Motivo de la anulación"));
             anular.Controls.Add(txtMotivo);
             var btnAnular = Estilos.Boton("Anular venta (Enter)", (_, _) => AnularVenta(), 200);
-            btnAnular.BackColor = Color.Firebrick;
+            btnAnular.BackColor = Estilos.FondoBotonPeligro;
             btnAnular.ForeColor = Color.White;
             anular.Controls.Add(btnAnular);
             zonaAnular.Controls.Add(anular);
@@ -99,7 +99,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             if (venta.Anulada)
             {
                 lblDatos.Text += $"\nANULADA el {venta.AnuladaEn:dd/MM HH:mm}. Motivo: {venta.MotivoAnulacion}";
-                lblDatos.ForeColor = Color.Firebrick;
+                lblDatos.ForeColor = Estilos.Error;
             }
             else
             {
@@ -147,7 +147,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             }
             catch (ReglaDeNegocioException ex)
             {
-                MostrarMensaje(ex.Message, Color.Red);
+                MostrarMensaje(ex.Message, Estilos.Error);
                 return;
             }
 
@@ -165,7 +165,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             }
             catch (Exception ex) when (ex is NoSePudoImprimirException or ReglaDeNegocioException)
             {
-                MostrarMensaje(ex.Message, Color.Red);
+                MostrarMensaje(ex.Message, Estilos.Error);
             }
         }
 

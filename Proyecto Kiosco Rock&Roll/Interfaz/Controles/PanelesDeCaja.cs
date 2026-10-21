@@ -36,7 +36,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         {
             var botones = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0, 12, 0, 0) };
             var btnConfirmar = Estilos.Boton($"{TextoConfirmar} (Enter)", (_, _) => IntentarConfirmar(), 200);
-            btnConfirmar.BackColor = Estilos.Exito;
+            btnConfirmar.BackColor = Estilos.FondoBotonPrincipal;
             btnConfirmar.ForeColor = Color.White;
             botones.Controls.Add(btnConfirmar);
             botones.Controls.Add(Estilos.Boton("Cancelar (Esc)", (_, _) => Cancelado?.Invoke(this, EventArgs.Empty), 150));
@@ -83,7 +83,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             }
             catch (ReglaDeNegocioException ex)
             {
-                MostrarMensaje(ex.Message, Color.Red);
+                MostrarMensaje(ex.Message, Estilos.Error);
             }
         }
     }
@@ -214,7 +214,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
             var diferencia = _resumen.DiferenciaSiSeContara(numContado.ValorTipeado());
             lblDiferencia.Text = ResumenTurno.DescribirDiferencia(diferencia);
-            lblDiferencia.ForeColor = diferencia == 0 ? Estilos.Exito : diferencia > 0 ? Estilos.Advertencia : Color.Red;
+            lblDiferencia.ForeColor = diferencia == 0 ? Estilos.Exito : diferencia > 0 ? Estilos.Advertencia : Estilos.Error;
         }
 
         protected override void Confirmar()

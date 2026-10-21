@@ -51,7 +51,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
 
             var abajo = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(6) };
             var btnAhora = Estilos.Boton("Hacer backup ahora", (_, _) => HacerBackup(), 200);
-            btnAhora.BackColor = Estilos.Exito;
+            btnAhora.BackColor = Estilos.FondoBotonPrincipal;
             btnAhora.ForeColor = Color.White;
             abajo.Controls.Add(btnAhora);
             abajo.Controls.Add(Estilos.Boton("Restaurar el elegido…", (_, _) => Restaurar(), 210));
@@ -88,7 +88,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             if (resultado.TodoBien)
                 MostrarEstado($"Backup hecho en {resultado.Destinos.Count} carpeta(s).", Estilos.Exito);
             else
-                MostrarEstado(DescribirErrores(resultado), Color.Red);
+                MostrarEstado(DescribirErrores(resultado), Estilos.Error);
         }
 
         private void ElegirCarpetaExtra()
@@ -137,7 +137,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or Microsoft.Data.Sqlite.SqliteException)
             {
-                MostrarEstado($"No se pudo restaurar: {ex.Message}", Color.Red);
+                MostrarEstado($"No se pudo restaurar: {ex.Message}", Estilos.Error);
                 return;
             }
 

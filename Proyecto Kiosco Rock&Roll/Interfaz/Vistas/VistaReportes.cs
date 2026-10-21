@@ -191,13 +191,13 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             catch (ReglaDeNegocioException ex)
             {
                 _reporte = null;
-                MostrarEstado(ex.Message, Color.Red);
+                MostrarEstado(ex.Message, Estilos.Error);
             }
 
             lblVendido.Text = _reporte?.Vendido.ToString("C2") ?? "-";
             lblCosto.Text = _reporte?.Costo.ToString("C2") ?? "-";
             lblGanancia.Text = _reporte?.Ganancia.ToString("C2") ?? "-";
-            lblGanancia.ForeColor = _reporte?.Ganancia < 0 ? Color.Red : Estilos.Exito;
+            lblGanancia.ForeColor = _reporte?.Ganancia < 0 ? Estilos.Error : Estilos.Exito;
             lblPorcentaje.Text = _reporte?.PorcentajeSobreCosto?.ToString("P0") ?? "-";
             lblVentas.Text = _reporte?.CantidadVentas.ToString("N0") ?? "-";
             grillaPeriodos.DataSource = _reporte?.Filas.ToList();
@@ -215,7 +215,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             if (fila.Vendido == 0)
                 e.CellStyle!.ForeColor = SystemColors.GrayText;
             else if (grilla.Columns[e.ColumnIndex].DataPropertyName == nameof(ConGanancia.Ganancia) && fila.Ganancia < 0)
-                e.CellStyle!.ForeColor = Color.Red;
+                e.CellStyle!.ForeColor = Estilos.Error;
         }
 
         private void ExportarPdf()
@@ -242,7 +242,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                MostrarEstado($"No se pudo guardar el PDF: {ex.Message}", Color.Red);
+                MostrarEstado($"No se pudo guardar el PDF: {ex.Message}", Estilos.Error);
             }
         }
 
