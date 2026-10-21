@@ -1,6 +1,8 @@
 using KioscoRockAndRoll.Dominio;
 using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
+using KioscoRockAndRoll.Reportes;
+using Proyecto_Kiosco_Rock_Roll.Interfaz.Impresion;
 
 namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 {
@@ -11,6 +13,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
     public class PanelDetalleVenta : UserControl
     {
         private readonly VentaServicio _ventas;
+        private readonly ImpresoraDeTickets _impresora;
+        private readonly Button btnImprimir;
         private DetalleVenta? _detalle;
 
         private readonly Label lblTitulo = Estilos.Etiqueta("", Estilos.Titulo);
@@ -26,9 +30,10 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
         public event EventHandler? Cerrado;
 
-        public PanelDetalleVenta(VentaServicio ventas)
+        public PanelDetalleVenta(VentaServicio ventas, ImpresoraDeTickets impresora)
         {
             _ventas = ventas;
+            _impresora = impresora;
             Font = Estilos.Normal;
 
             var arriba = new TableLayoutPanel { ColumnCount = 1, AutoSize = true, Dock = DockStyle.Top };
@@ -55,7 +60,11 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
             abajo.Controls.Add(lblTotal);
             abajo.Controls.Add(zonaAnular);
-            abajo.Controls.Add(Estilos.Boton("Cerrar (Esc)", (_, _) => Cerrado?.Invoke(this, EventArgs.Empty), 150));
+            var botones = new FlowLayoutPanel { AutoSize = true };
+            btnImprimir = Estilos.Boton("Imprimir ticket", (_, _) => ImprimirCopia(), 170);
+            botones.Controls.Add(btnImprimir);
+            botones.Controls.Add(Estilos.Boton("Cerrar (Esc)", (_, _) => Cerrado?.Invoke(this, EventArgs.Empty), 150));
+            abajo.Controls.Add(botones);
             abajo.Controls.Add(lblMensaje);
             var pie = new Panel { Dock = DockStyle.Bottom, AutoSize = true };
             pie.Controls.Add(abajo);
@@ -78,8 +87,12 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
                 grilla.DataSource = null;
                 lblTotal.Text = "";
                 zonaAnular.Visible = false;
+                btnImprimir.Visible = false;
                 return;
             }
+
+            // Una venta anulada no se reimprime; sin impresora configurada, el botón no tiene sentido.
+            btnImprimir.Visible = !venta.Anulada && _impresora.Configuracion.HayImpresora;
 
             lblTitulo.Text = $"Venta Nº {venta.Id}";
             lblDatos.Text = $"{venta.Fecha:dd/MM/yyyy HH:mm}  ·  {venta.MedioDePagoDescripcion}";
@@ -139,6 +152,21 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             }
 
             Anulada?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void ImprimirCopia()
+        {
+            if (_detalle is null)
+                return;
+            try
+            {
+                _impresora.Imprimir(Ticket.CopiaDe(_detalle, ExportadorDeReportes.NombreNegocio));
+                MostrarMensaje("Se mandó la copia del ticket a la impresora.", Estilos.Exito);
+            }
+            catch (Exception ex) when (ex is NoSePudoImprimirException or ReglaDeNegocioException)
+            {
+                MostrarMensaje(ex.Message, Color.Red);
+            }
         }
 
         private void MostrarMensaje(string texto, Color color)

@@ -29,10 +29,14 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         private readonly Label lblPagaCon = Estilos.Etiqueta("Paga con (vacío = justo)");
         private readonly NumericUpDown numPagaCon = Estilos.CampoNumero(2);
         private readonly Label lblVuelto = Estilos.Etiqueta("", Estilos.Grande);
+        private readonly CheckBox chkTicket = new() { Text = "Imprimir ticket", AutoSize = true, Font = Estilos.Grande, Margin = new Padding(3, 10, 3, 3) };
         private readonly Label lblError = new() { AutoSize = true, ForeColor = Color.Red, MaximumSize = new Size(400, 0) };
 
         public event EventHandler<Cobro>? Confirmado;
         public event EventHandler? Cancelado;
+
+        /// <summary>Si hay que imprimir el ticket de esta venta (solo si hay impresora configurada).</summary>
+        public bool ImprimirTicket => chkTicket.Visible && chkTicket.Checked;
 
         public PanelCobro()
         {
@@ -64,6 +68,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             tabla.Controls.Add(numPagaCon);
             tabla.Controls.Add(Estilos.Etiqueta("Vuelto"));
             tabla.Controls.Add(lblVuelto);
+            tabla.Controls.Add(chkTicket);
 
             var botones = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0, 12, 0, 0) };
             var btnConfirmar = Estilos.Boton("Confirmar (Enter)", (_, _) => Confirmar(), 180);
@@ -81,9 +86,12 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             numPagaCon.KeyUp += (_, _) => Actualizar();
         }
 
-        public void Iniciar(decimal total)
+        /// <param name="ticket">La configuración de la impresora: si no hay, la casilla "Imprimir ticket" no se muestra.</param>
+        public void Iniciar(decimal total, ConfiguracionDeTicket ticket)
         {
             _total = total;
+            chkTicket.Visible = ticket.HayImpresora;
+            chkTicket.Checked = ticket.ImprimirAlCobrar;
             lblTotal.Text = total.ToString("C2");
             Estilos.Elegir<Opcion<MedioDePago?>>(cmbMedio, o => o.Valor == MedioDePago.Efectivo);
             Vaciar(numPagaCon);

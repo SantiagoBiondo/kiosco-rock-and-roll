@@ -6,6 +6,7 @@ using KioscoRockAndRoll.Reportes;
 using Microsoft.Extensions.DependencyInjection;
 using Proyecto_Kiosco_Rock_Roll.Interfaz;
 using Proyecto_Kiosco_Rock_Roll.Interfaz.Controles;
+using Proyecto_Kiosco_Rock_Roll.Interfaz.Impresion;
 using Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas;
 
 namespace Proyecto_Kiosco_Rock_Roll
@@ -43,6 +44,7 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddSingleton<ReporteDelDiaServicio>();
             servicios.AddSingleton<ReporteDeVentasServicio>();
             servicios.AddSingleton<ExportadorDeReportes>();
+            servicios.AddSingleton<ImpresoraDeTickets>();
             servicios.AddSingleton<CatalogoServicio<Categoria>>();
             servicios.AddSingleton<CatalogoServicio<Proveedor>>();
 
@@ -66,6 +68,7 @@ namespace Proyecto_Kiosco_Rock_Roll
             servicios.AddSingleton<VistaIngresoMercaderia>();
             servicios.AddSingleton<VistaCaja>();
             servicios.AddSingleton<VistaReportes>();
+            servicios.AddSingleton<VistaConfiguracion>();
             servicios.AddSingleton<VistaBackups>();
             return servicios;
         }

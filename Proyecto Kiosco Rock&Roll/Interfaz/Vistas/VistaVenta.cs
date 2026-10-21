@@ -1,6 +1,8 @@
 using KioscoRockAndRoll.Dominio.Entidades;
 using KioscoRockAndRoll.Dominio.Servicios;
+using KioscoRockAndRoll.Reportes;
 using Proyecto_Kiosco_Rock_Roll.Interfaz.Controles;
+using Proyecto_Kiosco_Rock_Roll.Interfaz.Impresion;
 
 namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
 {
@@ -14,6 +16,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
         private readonly InventarioServicio _inventario;
         private readonly VentaServicio _ventas;
         private readonly CajaServicio _caja;
+        private readonly ImpresoraDeTickets _impresora;
         private readonly Carrito _carrito = new();
 
         private readonly PanelLateral panelLateral = new();
@@ -28,12 +31,13 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
         private readonly Label lblTotal = new() { Font = Estilos.Total, AutoSize = true };
         private readonly Label lblEstado = new() { AutoSize = true, Font = Estilos.Normal, Anchor = AnchorStyles.Left };
 
-        public VistaVenta(InventarioServicio inventario, VentaServicio ventas, CajaServicio caja,
+        public VistaVenta(InventarioServicio inventario, VentaServicio ventas, CajaServicio caja, ImpresoraDeTickets impresora,
             BuscadorProducto buscador, EditorProducto editor, PanelAbrirCaja panelAbrirCaja)
         {
             _inventario = inventario;
             _ventas = ventas;
             _caja = caja;
+            _impresora = impresora;
             this.buscador = buscador;
             this.editor = editor;
             this.panelAbrirCaja = panelAbrirCaja;
@@ -287,15 +291,28 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
                 return;
             }
             AbrirPanel(panelCobro);
-            panelCobro.Iniciar(_carrito.Total);
+            panelCobro.Iniciar(_carrito.Total, _impresora.Configuracion);
         }
 
         private void Cobrar(Cobro cobro)
         {
+            var imprimirTicket = panelCobro.ImprimirTicket;
             var venta = _ventas.Cobrar(_carrito, cobro);
             CerrarPanel();
             var vuelto = cobro.Vuelto > 0 ? $"  -  VUELTO: {cobro.Vuelto:C2}" : "";
             MostrarEstado($"Venta Nº {venta.Id} registrada ({venta.Total:C2}, {cobro.Descripcion}){vuelto}", Estilos.Exito);
+
+            if (!imprimirTicket)
+                return;
+            // La venta ya quedó guardada: si la impresora falla, solo se avisa.
+            try
+            {
+                _impresora.Imprimir(Ticket.DeVenta(venta, cobro, ExportadorDeReportes.NombreNegocio));
+            }
+            catch (NoSePudoImprimirException ex)
+            {
+                MostrarEstado($"Venta Nº {venta.Id} registrada{vuelto}. El ticket no salió: {ex.Message}", Estilos.Advertencia);
+            }
         }
 
         private void AbrirPanel(Control contenido)
