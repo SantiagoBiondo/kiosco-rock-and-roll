@@ -53,8 +53,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             anular.Controls.Add(Estilos.Etiqueta("Motivo de la anulación"));
             anular.Controls.Add(txtMotivo);
             var btnAnular = Estilos.Boton("Anular venta (Enter)", (_, _) => AnularVenta(), 200);
-            btnAnular.BackColor = Estilos.FondoBotonPeligro;
-            btnAnular.ForeColor = Color.White;
+            Estilos.Destacar(btnAnular, Estilos.FondoBotonPeligro);
             anular.Controls.Add(btnAnular);
             zonaAnular.Controls.Add(anular);
 

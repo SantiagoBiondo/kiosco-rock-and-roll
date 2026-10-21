@@ -72,8 +72,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
             var botones = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0, 12, 0, 0) };
             var btnConfirmar = Estilos.Boton("Confirmar (Enter)", (_, _) => Confirmar(), 180);
-            btnConfirmar.BackColor = Estilos.FondoBotonPrincipal;
-            btnConfirmar.ForeColor = Color.White;
+            Estilos.Destacar(btnConfirmar, Estilos.FondoBotonPrincipal);
             botones.Controls.Add(btnConfirmar);
             botones.Controls.Add(Estilos.Boton("Volver (Esc)", (_, _) => Cancelado?.Invoke(this, EventArgs.Empty), 150));
             tabla.Controls.Add(botones);

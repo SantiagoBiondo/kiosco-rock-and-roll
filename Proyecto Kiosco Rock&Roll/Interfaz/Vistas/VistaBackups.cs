@@ -51,8 +51,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
 
             var abajo = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(6) };
             var btnAhora = Estilos.Boton("Hacer backup ahora", (_, _) => HacerBackup(), 200);
-            btnAhora.BackColor = Estilos.FondoBotonPrincipal;
-            btnAhora.ForeColor = Color.White;
+            Estilos.Destacar(btnAhora, Estilos.FondoBotonPrincipal);
             abajo.Controls.Add(btnAhora);
             abajo.Controls.Add(Estilos.Boton("Restaurar el elegido…", (_, _) => Restaurar(), 210));
             abajo.Controls.Add(lblEstado);

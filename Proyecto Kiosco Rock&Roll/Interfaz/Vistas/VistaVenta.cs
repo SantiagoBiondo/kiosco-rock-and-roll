@@ -87,8 +87,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             var btnCobrar = Estilos.Boton("COBRAR (F12)", (_, _) => AbrirCobro(), 200);
             btnCobrar.Height = 60;
             btnCobrar.Font = Estilos.Grande;
-            btnCobrar.BackColor = Estilos.FondoBotonPrincipal;
-            btnCobrar.ForeColor = Color.White;
+            Estilos.Destacar(btnCobrar, Estilos.FondoBotonPrincipal);
             totalYCobro.Controls.Add(btnCobrar);
 
             abajo.Controls.Add(acciones, 0, 0);

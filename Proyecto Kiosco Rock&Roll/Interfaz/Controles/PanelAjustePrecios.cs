@@ -61,8 +61,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
             var botones = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(0, 8, 0, 0) };
             var btnAplicar = Estilos.Boton("Aplicar (Enter)", (_, _) => Aplicar(), 160);
-            btnAplicar.BackColor = Estilos.FondoBotonPrincipal;
-            btnAplicar.ForeColor = Color.White;
+            Estilos.Destacar(btnAplicar, Estilos.FondoBotonPrincipal);
             botones.Controls.Add(btnAplicar);
             botones.Controls.Add(Estilos.Boton("Cancelar (Esc)", (_, _) => Cancelado?.Invoke(this, EventArgs.Empty), 160));
 

@@ -103,6 +103,24 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
             return boton;
         }
 
+        /// <summary>
+        /// Pinta un botón importante (cobrar, confirmar, anular) con su color y letra blanca.
+        /// En el tema oscuro Windows dibuja los botones comunes a su manera e ignora el color de fondo,
+        /// por eso ahí se lo dibuja plano: así se ve del mismo color en los dos temas.
+        /// </summary>
+        public static void Destacar(Button boton, Color fondo)
+        {
+            boton.BackColor = fondo;
+            boton.ForeColor = Color.White;
+            if (Oscuro)
+            {
+                boton.FlatStyle = FlatStyle.Flat;
+                boton.FlatAppearance.BorderColor = ControlPaint.Light(fondo);
+                boton.FlatAppearance.MouseOverBackColor = ControlPaint.Light(fondo, 0.3f);
+                boton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(fondo, 0.1f);
+            }
+        }
+
         public static NumericUpDown CampoNumero(int decimales, decimal maximo = 100_000_000)
         {
             return new NumericUpDown
