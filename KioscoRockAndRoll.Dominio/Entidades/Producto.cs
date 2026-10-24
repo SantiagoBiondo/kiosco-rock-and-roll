@@ -26,6 +26,20 @@ public class Producto
     /// <summary>Proveedor habitual del producto, o null si no tiene.</summary>
     public long? ProveedorId { get; private set; }
 
+    /// <summary>
+    /// Si se vende suelto: el producto (paquete, caja) del que salen las unidades, o null si no.
+    /// Ejemplo: "Cigarrillo suelto" sale de "Marlboro x20".
+    /// </summary>
+    public long? PaqueteId { get; private set; }
+
+    /// <summary>Cuántas unidades trae el paquete (0 si no se vende suelto).</summary>
+    public int UnidadesPorPaquete { get; private set; }
+
+    /// <summary>Paquetes cerrados que quedan, leídos junto con el producto. Solo informativo.</summary>
+    public int PaquetesCerrados { get; private set; }
+
+    public bool SeVendeSuelto => PaqueteId != null;
+
     public Producto(string codigoBarras, string nombre, decimal precioCosto, decimal precioVenta,
         int stock = 0, int stockMinimo = 0)
     {
@@ -37,19 +51,32 @@ public class Producto
 
     /// <summary>Reconstruye un producto ya guardado. Lo usa la capa de datos.</summary>
     public static Producto Restaurar(long id, string codigoBarras, string nombre, decimal precioCosto,
-        decimal precioVenta, int stock, int stockMinimo, long? categoriaId = null, long? proveedorId = null)
+        decimal precioVenta, int stock, int stockMinimo, long? categoriaId = null, long? proveedorId = null,
+        long? paqueteId = null, int unidadesPorPaquete = 0, int paquetesCerrados = 0)
     {
         var producto = new Producto(codigoBarras, nombre, precioCosto, precioVenta, 0, stockMinimo) { Id = id };
         producto.Stock = stock;
         producto.Clasificar(categoriaId, proveedorId);
+        if (paqueteId != null)
+        {
+            producto.PaqueteId = paqueteId;
+            producto.UnidadesPorPaquete = unidadesPorPaquete;
+            producto.PaquetesCerrados = paquetesCerrados;
+        }
         return producto;
     }
 
     public bool EsNuevo => Id == 0;
-    public bool StockBajo => Stock <= StockMinimo;
     public bool VendeAPerdida => PrecioVenta < PrecioCosto;
 
-    public bool TieneStockPara(int cantidad) => Stock >= cantidad;
+    /// <summary>
+    /// Lo que se puede vender: el stock, más las unidades de los paquetes cerrados si se vende suelto.
+    /// </summary>
+    public int StockDisponible => Stock + (SeVendeSuelto ? Math.Max(PaquetesCerrados, 0) * UnidadesPorPaquete : 0);
+
+    public bool StockBajo => StockDisponible <= StockMinimo;
+
+    public bool TieneStockPara(int cantidad) => StockDisponible >= cantidad;
 
     public void AsignarId(long id)
     {
@@ -88,6 +115,47 @@ public class Producto
             throw new ArgumentOutOfRangeException(categoriaId <= 0 ? nameof(categoriaId) : nameof(proveedorId));
         CategoriaId = categoriaId;
         ProveedorId = proveedorId;
+    }
+
+    /// <summary>
+    /// Indica de qué paquete salen las unidades sueltas de este producto (null = no se vende suelto).
+    /// </summary>
+    public void VenderSueltoDe(Producto? paquete, int unidadesPorPaquete)
+    {
+        if (paquete == null)
+        {
+            PaqueteId = null;
+            UnidadesPorPaquete = 0;
+            PaquetesCerrados = 0;
+            return;
+        }
+
+        if (paquete.EsNuevo)
+            throw new InvalidOperationException("El paquete tiene que estar guardado.");
+        if (paquete.Id == Id || paquete.CodigoBarras == CodigoBarras)
+            throw new ReglaDeNegocioException("Un producto no puede salir de sí mismo: el paquete tiene que ser otro producto.");
+        if (paquete.SeVendeSuelto)
+            throw new ReglaDeNegocioException($"\"{paquete.Nombre}\" ya se vende suelto de otro paquete: elegí el paquete cerrado.");
+        if (unidadesPorPaquete < 2)
+            throw new ReglaDeNegocioException("Indicá cuántas unidades trae el paquete (2 o más).");
+
+        PaqueteId = paquete.Id;
+        UnidadesPorPaquete = unidadesPorPaquete;
+        PaquetesCerrados = paquete.Stock;
+    }
+
+    /// <summary>
+    /// Cuántos paquetes hay que abrir para vender <paramref name="cantidad"/> unidades sueltas:
+    /// los justos para cubrir lo que falta, sin pasarse de los paquetes cerrados que quedan.
+    /// Si no alcanza, el resto queda como stock negativo (igual que cualquier otro producto).
+    /// </summary>
+    public static int PaquetesQueHayQueAbrir(int sueltas, int cantidad, int unidadesPorPaquete, int paquetesCerrados)
+    {
+        var faltan = cantidad - sueltas;
+        if (faltan <= 0 || unidadesPorPaquete <= 0 || paquetesCerrados <= 0)
+            return 0;
+        var necesarios = (faltan + unidadesPorPaquete - 1) / unidadesPorPaquete;
+        return Math.Min(necesarios, paquetesCerrados);
     }
 
     public void AjustarPrecios(AjustePrecios ajuste)

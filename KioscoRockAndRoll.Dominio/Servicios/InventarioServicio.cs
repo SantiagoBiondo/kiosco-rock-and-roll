@@ -3,10 +3,14 @@ using KioscoRockAndRoll.Dominio.Repositorios;
 
 namespace KioscoRockAndRoll.Dominio.Servicios;
 
-/// <summary>Datos que se cargan en el formulario de alta/edición de un producto.</summary>
+/// <summary>
+/// Datos que se cargan en el formulario de alta/edición de un producto.
+/// Si se vende suelto, <see cref="CodigoPaquete"/> es el código del paquete del que salen las unidades.
+/// </summary>
 public sealed record DatosProducto(
     string CodigoBarras, string Nombre, decimal PrecioCosto, decimal PrecioVenta, int Stock, int StockMinimo,
-    long? CategoriaId = null, long? ProveedorId = null);
+    long? CategoriaId = null, long? ProveedorId = null,
+    string? CodigoPaquete = null, int UnidadesPorPaquete = 0);
 
 /// <summary>Casos de uso del inventario: alta, edición, baja e ingreso de mercadería.</summary>
 public class InventarioServicio(IProductoRepositorio productos)
@@ -39,6 +43,7 @@ public class InventarioServicio(IProductoRepositorio productos)
         var producto = new Producto(datos.CodigoBarras, datos.Nombre, datos.PrecioCosto, datos.PrecioVenta,
             datos.Stock, datos.StockMinimo);
         producto.Clasificar(datos.CategoriaId, datos.ProveedorId);
+        AsignarPaquete(producto, datos);
         productos.Agregar(producto);
         return producto;
     }
@@ -52,6 +57,7 @@ public class InventarioServicio(IProductoRepositorio productos)
         producto.ActualizarDatos(datos.CodigoBarras, datos.Nombre, datos.PrecioCosto, datos.PrecioVenta, datos.StockMinimo);
         producto.AjustarStock(datos.Stock);
         producto.Clasificar(datos.CategoriaId, datos.ProveedorId);
+        AsignarPaquete(producto, datos);
         productos.Actualizar(producto);
         return producto;
     }
@@ -114,6 +120,23 @@ public class InventarioServicio(IProductoRepositorio productos)
 
         productos.ActualizarVarios(aActualizar);
         return aActualizar.Count;
+    }
+
+    private void AsignarPaquete(Producto producto, DatosProducto datos)
+    {
+        var codigo = datos.CodigoPaquete?.Trim() ?? "";
+        if (codigo == "")
+        {
+            producto.VenderSueltoDe(null, 0);
+            return;
+        }
+
+        var paquete = productos.ObtenerPorCodigo(codigo)
+                      ?? throw new ReglaDeNegocioException($"No hay ningún producto con el código de paquete {codigo}. Cargá primero el paquete.");
+        // Si de este producto ya salen unidades sueltas, no puede ser a la vez unidad de otro paquete.
+        if (!producto.EsNuevo && productos.Buscar("").Any(p => p.PaqueteId == producto.Id))
+            throw new ReglaDeNegocioException("De este producto ya se venden unidades sueltas, así que no puede salir de otro paquete.");
+        producto.VenderSueltoDe(paquete, datos.UnidadesPorPaquete);
     }
 
     private void ValidarCodigoLibre(string codigoBarras, long? idActual)

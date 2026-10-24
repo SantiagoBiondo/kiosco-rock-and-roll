@@ -59,9 +59,52 @@ public sealed class SqliteVentaRepositorio(ConexionSqlite conexion) : IVentaRepo
             pPrecio.Value = ACentavos(linea.PrecioUnitario);
             pCosto.Value = ACentavos(linea.CostoUnitario);
             comandoLinea.ExecuteNonQuery();
+            AbrirPaquetesSiHaceFalta(db, linea.ProductoId, linea.Cantidad);
         }
 
         transaccion.Commit();
+    }
+
+    /// <summary>
+    /// Si el producto se vende suelto y no alcanzaban las unidades sueltas, abre los paquetes necesarios:
+    /// cada paquete abierto descuenta 1 del stock del paquete y suma sus unidades a las sueltas.
+    /// Se ejecuta dentro de la transacción de la venta, después de descontar lo vendido.
+    /// </summary>
+    private static void AbrirPaquetesSiHaceFalta(Microsoft.Data.Sqlite.SqliteConnection db, long productoId, int cantidad)
+    {
+        using var consulta = db.CreateCommand();
+        consulta.CommandText = """
+            SELECT u.Stock, u.UnidadesPorPaquete, paq.Id, paq.Stock
+            FROM Productos u
+            JOIN Productos paq ON paq.Id = u.PaqueteId
+            WHERE u.Id = $producto
+            """;
+        consulta.Parameters.AddWithValue("$producto", productoId);
+
+        long paqueteId;
+        int paquetes, unidadesPorPaquete;
+        using (var lector = consulta.ExecuteReader())
+        {
+            if (!lector.Read())
+                return; // no se vende suelto
+            var sueltasAntes = lector.GetInt32(0) + cantidad;
+            unidadesPorPaquete = lector.GetInt32(1);
+            paqueteId = lector.GetInt64(2);
+            paquetes = Producto.PaquetesQueHayQueAbrir(sueltasAntes, cantidad, unidadesPorPaquete, lector.GetInt32(3));
+        }
+        if (paquetes == 0)
+            return;
+
+        using var abrir = db.CreateCommand();
+        abrir.CommandText = """
+            UPDATE Productos SET Stock = Stock - $paquetes WHERE Id = $paquete;
+            UPDATE Productos SET Stock = Stock + $unidades WHERE Id = $producto;
+            """;
+        abrir.Parameters.AddWithValue("$paquetes", paquetes);
+        abrir.Parameters.AddWithValue("$paquete", paqueteId);
+        abrir.Parameters.AddWithValue("$unidades", paquetes * unidadesPorPaquete);
+        abrir.Parameters.AddWithValue("$producto", productoId);
+        abrir.ExecuteNonQuery();
     }
 
     private const string SelectResumenes = """

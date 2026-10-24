@@ -7,17 +7,19 @@ namespace KioscoRockAndRoll.Datos;
 
 public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProductoRepositorio
 {
+    // Junto con cada producto suelto se lee el stock de su paquete (los paquetes cerrados que quedan).
     private const string SelectProductos = """
-        SELECT Id, CodigoBarras, Nombre, PrecioCostoCentavos, PrecioVentaCentavos, Stock, StockMinimo,
-               CategoriaId, ProveedorId
-        FROM Productos
+        SELECT p.Id, p.CodigoBarras, p.Nombre, p.PrecioCostoCentavos, p.PrecioVentaCentavos, p.Stock, p.StockMinimo,
+               p.CategoriaId, p.ProveedorId, p.PaqueteId, p.UnidadesPorPaquete, COALESCE(paq.Stock, 0)
+        FROM Productos p
+        LEFT JOIN Productos paq ON paq.Id = p.PaqueteId
         """;
 
     public Producto? ObtenerPorId(long id) =>
-        ConsultarUno($"{SelectProductos} WHERE Id = $id", ("$id", id));
+        ConsultarUno($"{SelectProductos} WHERE p.Id = $id", ("$id", id));
 
     public Producto? ObtenerPorCodigo(string codigoBarras) =>
-        ConsultarUno($"{SelectProductos} WHERE CodigoBarras = $codigo", ("$codigo", codigoBarras));
+        ConsultarUno($"{SelectProductos} WHERE p.CodigoBarras = $codigo", ("$codigo", codigoBarras));
 
     public IReadOnlyList<Producto> Buscar(string texto)
     {
@@ -26,8 +28,8 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
         // ESCAPE permite buscar textos que contienen % o _ sin que se tomen como comodines.
         comando.CommandText = $"""
             {SelectProductos}
-            WHERE Nombre LIKE $patron ESCAPE '\' OR CodigoBarras LIKE $patron ESCAPE '\'
-            ORDER BY Nombre COLLATE NOCASE
+            WHERE p.Nombre LIKE $patron ESCAPE '\' OR p.CodigoBarras LIKE $patron ESCAPE '\'
+            ORDER BY p.Nombre COLLATE NOCASE
             """;
         comando.Parameters.AddWithValue("$patron", $"%{EscaparLike(texto.Trim())}%");
 
@@ -44,8 +46,8 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
         using var comando = db.CreateCommand();
         comando.CommandText = """
             INSERT INTO Productos (CodigoBarras, Nombre, PrecioCostoCentavos, PrecioVentaCentavos, Stock, StockMinimo,
-                                   CategoriaId, ProveedorId)
-            VALUES ($codigo, $nombre, $costo, $venta, $stock, $minimo, $categoria, $proveedor)
+                                   CategoriaId, ProveedorId, PaqueteId, UnidadesPorPaquete)
+            VALUES ($codigo, $nombre, $costo, $venta, $stock, $minimo, $categoria, $proveedor, $paquete, $unidades)
             RETURNING Id
             """;
         CargarParametros(comando, producto);
@@ -63,7 +65,8 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
             UPDATE Productos
             SET CodigoBarras = $codigo, Nombre = $nombre, PrecioCostoCentavos = $costo,
                 PrecioVentaCentavos = $venta, Stock = $stock, StockMinimo = $minimo,
-                CategoriaId = $categoria, ProveedorId = $proveedor
+                CategoriaId = $categoria, ProveedorId = $proveedor,
+                PaqueteId = $paquete, UnidadesPorPaquete = $unidades
             WHERE Id = $id
             """;
 
@@ -117,6 +120,8 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
         comando.Parameters.AddWithValue("$minimo", producto.StockMinimo);
         comando.Parameters.AddWithValue("$categoria", (object?)producto.CategoriaId ?? DBNull.Value);
         comando.Parameters.AddWithValue("$proveedor", (object?)producto.ProveedorId ?? DBNull.Value);
+        comando.Parameters.AddWithValue("$paquete", (object?)producto.PaqueteId ?? DBNull.Value);
+        comando.Parameters.AddWithValue("$unidades", producto.UnidadesPorPaquete);
     }
 
     private static Producto Leer(SqliteDataReader lector) => Producto.Restaurar(
@@ -128,7 +133,10 @@ public sealed class SqliteProductoRepositorio(ConexionSqlite conexion) : IProduc
         stock: lector.GetInt32(5),
         stockMinimo: lector.GetInt32(6),
         categoriaId: lector.IsDBNull(7) ? null : lector.GetInt64(7),
-        proveedorId: lector.IsDBNull(8) ? null : lector.GetInt64(8));
+        proveedorId: lector.IsDBNull(8) ? null : lector.GetInt64(8),
+        paqueteId: lector.IsDBNull(9) ? null : lector.GetInt64(9),
+        unidadesPorPaquete: lector.GetInt32(10),
+        paquetesCerrados: lector.GetInt32(11));
 
     private static string EscaparLike(string texto) =>
         texto.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_");

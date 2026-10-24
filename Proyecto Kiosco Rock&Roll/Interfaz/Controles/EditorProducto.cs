@@ -25,6 +25,18 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         private readonly ComboBox cmbCategoria = Estilos.Opciones<Opcion<long?>>([], o => o.Texto, 220);
         private readonly ComboBox cmbProveedor = Estilos.Opciones<Opcion<long?>>([], o => o.Texto, 220);
         private readonly Label lblMargen = Estilos.Etiqueta("");
+
+        // Productos que se venden sueltos, sacados de un paquete (ej.: cigarrillo suelto de un atado).
+        private readonly CheckBox chkSuelto = new()
+        {
+            Text = "Se vende suelto, sacado de un paquete (ej.: cigarrillo suelto de un atado)",
+            AutoSize = true,
+            Margin = new Padding(3, 12, 3, 3)
+        };
+        private readonly TextBox txtPaquete = new() { Width = 220, PlaceholderText = "Escaneá el paquete" };
+        private readonly NumericUpDown numUnidades = Estilos.CampoNumero(0, 1000);
+        private readonly Label lblPaquete = new() { AutoSize = true, MaximumSize = new Size(400, 0), Margin = new Padding(3, 0, 3, 6) };
+        private readonly List<Control> filasDePaquete = [];
         private readonly Label lblError = new() { AutoSize = true, ForeColor = Estilos.Error, MaximumSize = new Size(400, 0) };
 
         /// <summary>Se guardó el producto (nuevo o editado).</summary>
@@ -44,6 +56,14 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             tabla.Controls.Add(lblTitulo);
             tabla.SetColumnSpan(lblTitulo, 2);
             AgregarFila(tabla, "Código de barras", txtCodigo);
+            AgregarFila(tabla, "", new Label
+            {
+                AutoSize = true,
+                MaximumSize = new Size(260, 0),
+                ForeColor = SystemColors.GrayText,
+                Margin = new Padding(3, 0, 3, 6),
+                Text = "¿No tiene código? Inventá uno corto (por ejemplo 101) y anotalo para tipearlo al vender."
+            });
             AgregarFila(tabla, "Nombre", txtNombre);
             AgregarFila(tabla, "Precio de costo", numCosto);
             AgregarFila(tabla, "Precio de venta", numVenta);
@@ -52,6 +72,14 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             AgregarFila(tabla, "Stock mínimo", numMinimo);
             AgregarFila(tabla, "Categoría", cmbCategoria);
             AgregarFila(tabla, "Proveedor", cmbProveedor);
+
+            tabla.Controls.Add(chkSuelto);
+            tabla.SetColumnSpan(chkSuelto, 2);
+            filasDePaquete.AddRange(AgregarFila(tabla, "Código del paquete", txtPaquete));
+            filasDePaquete.AddRange(AgregarFila(tabla, "", lblPaquete));
+            filasDePaquete.AddRange(AgregarFila(tabla, "Unidades por paquete", numUnidades));
+            chkSuelto.CheckedChanged += (_, _) => MostrarPaquete();
+            txtPaquete.TextChanged += (_, _) => DescribirPaquete();
 
             var botones = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0, 12, 0, 0) };
             botones.Controls.Add(Estilos.Boton("Guardar (Enter)", (_, _) => Guardar(), 160));
@@ -76,6 +104,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             lblTitulo.Text = "Nuevo producto";
             Cargar("", "", 0, 0, stockInicial, 0, null, null);
             txtCodigo.Text = codigoBarras;
+            CargarPaquete(null, 0);
         }
 
         public void Editar(Producto producto)
@@ -84,6 +113,40 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             lblTitulo.Text = "Editar producto";
             Cargar(producto.CodigoBarras, producto.Nombre, producto.PrecioCosto, producto.PrecioVenta,
                 Math.Max(0, producto.Stock), producto.StockMinimo, producto.CategoriaId, producto.ProveedorId);
+            var paquete = producto.PaqueteId is { } paqueteId ? _inventario.ObtenerPorId(paqueteId) : null;
+            CargarPaquete(paquete?.CodigoBarras, producto.UnidadesPorPaquete);
+        }
+
+        private void CargarPaquete(string? codigoPaquete, int unidades)
+        {
+            txtPaquete.Text = codigoPaquete ?? "";
+            numUnidades.Value = unidades;
+            chkSuelto.Checked = codigoPaquete != null;
+            MostrarPaquete();
+        }
+
+        private void MostrarPaquete()
+        {
+            foreach (var control in filasDePaquete)
+                control.Visible = chkSuelto.Checked;
+            DescribirPaquete();
+        }
+
+        /// <summary>Muestra de qué paquete se trata a medida que se escribe o escanea el código.</summary>
+        private void DescribirPaquete()
+        {
+            var codigo = txtPaquete.Text.Trim();
+            if (!chkSuelto.Checked || codigo == "")
+            {
+                lblPaquete.Text = "";
+                return;
+            }
+
+            var paquete = _inventario.ObtenerPorCodigo(codigo);
+            lblPaquete.Text = paquete == null
+                ? "No hay ningún producto con ese código. Cargá primero el paquete."
+                : $"{paquete.Nombre} (quedan {paquete.Stock} cerrados)";
+            lblPaquete.ForeColor = paquete == null ? Estilos.Error : Estilos.Exito;
         }
 
         /// <summary>Pone el cursor en el primer campo que falta completar.</summary>
@@ -96,6 +159,13 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            // El lector de códigos manda un Enter al final: en el campo del paquete solo pasa al siguiente.
+            if (keyData == Keys.Enter && txtPaquete.Focused)
+            {
+                numUnidades.Focus();
+                numUnidades.Select(0, numUnidades.Text.Length);
+                return true;
+            }
             switch (keyData)
             {
                 case Keys.Enter: Guardar(); return true;
@@ -124,10 +194,13 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             ActualizarMargen();
         }
 
-        private static void AgregarFila(TableLayoutPanel tabla, string etiqueta, Control campo)
+        /// <returns>La etiqueta y el campo, por si hay que mostrarlos u ocultarlos juntos.</returns>
+        private static Control[] AgregarFila(TableLayoutPanel tabla, string etiqueta, Control campo)
         {
-            tabla.Controls.Add(Estilos.Etiqueta(etiqueta));
+            var label = Estilos.Etiqueta(etiqueta);
+            tabla.Controls.Add(label);
             tabla.Controls.Add(campo);
+            return [label, campo];
         }
 
         private void ActualizarMargen()
@@ -149,7 +222,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         {
             var datos = new DatosProducto(
                 txtCodigo.Text, txtNombre.Text, numCosto.Value, numVenta.Value, (int)numStock.Value, (int)numMinimo.Value,
-                ((Opcion<long?>)cmbCategoria.SelectedItem!).Valor, ((Opcion<long?>)cmbProveedor.SelectedItem!).Valor);
+                ((Opcion<long?>)cmbCategoria.SelectedItem!).Valor, ((Opcion<long?>)cmbProveedor.SelectedItem!).Valor,
+                chkSuelto.Checked ? txtPaquete.Text : null, (int)numUnidades.Value);
 
             try
             {

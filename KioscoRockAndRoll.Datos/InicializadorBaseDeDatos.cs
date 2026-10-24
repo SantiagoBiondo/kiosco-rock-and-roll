@@ -136,6 +136,12 @@ public sealed class InicializadorBaseDeDatos(ConexionSqlite conexion, GestorDeBa
         SELECT v.Id, v.MedioPago,
                COALESCE((SELECT SUM(l.Cantidad * l.PrecioUnitarioCentavos) FROM VentaLineas l WHERE l.VentaId = v.Id), 0)
         FROM Ventas v;
+        """,
+
+        // 8: productos que se venden sueltos, sacados de un paquete (ej.: cigarrillo suelto de un atado).
+        """
+        ALTER TABLE Productos ADD COLUMN PaqueteId INTEGER REFERENCES Productos(Id) ON DELETE SET NULL;
+        ALTER TABLE Productos ADD COLUMN UnidadesPorPaquete INTEGER NOT NULL DEFAULT 0;
         """
     ];
 
