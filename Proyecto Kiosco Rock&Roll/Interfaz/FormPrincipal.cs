@@ -15,7 +15,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
         private Vista? _actual;
 
         public FormPrincipal(GestorDeBackups backups, VistaVenta venta, VistaInventario inventario,
-            VistaIngresoMercaderia ingreso, VistaCaja caja, VistaReportes reportes, VistaConfiguracion configuracion, VistaBackups vistaBackups)
+            VistaIngresoMercaderia ingreso, VistaEtiquetas etiquetas, VistaCaja caja, VistaReportes reportes, VistaConfiguracion configuracion, VistaBackups vistaBackups)
         {
             _backups = backups;
 
@@ -27,7 +27,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
             WindowState = FormWindowState.Maximized;
 
             var barra = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, BackColor = Estilos.FondoBarra, Padding = new Padding(6, 6, 6, 0) };
-            foreach (var vista in new Vista[] { venta, inventario, ingreso, caja, reportes, configuracion, vistaBackups })
+            foreach (var vista in new Vista[] { venta, inventario, ingreso, etiquetas, caja, reportes, configuracion, vistaBackups })
             {
                 var boton = new Button
                 {
