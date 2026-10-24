@@ -14,6 +14,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
         private readonly InventarioServicio _inventario;
         private IReadOnlyList<Producto> _productos = [];
+        private string _queProductos = "";
 
         private readonly NumericUpDown numPorcentaje = Estilos.CampoNumero(2, AjustePrecios.PorcentajeMaximo);
         private readonly ComboBox cmbPrecios = Estilos.Opciones(Enum.GetValues<PreciosAAjustar>(), p => p.Descripcion());
@@ -76,18 +77,20 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
         }
 
         /// <param name="productos">Los productos a los que se va a aplicar el ajuste.</param>
-        public void Iniciar(IReadOnlyList<Producto> productos)
+        /// <param name="queProductos">Cómo se eligieron, en palabras (ej.: "categoría Golosinas, proveedor Arcor").</param>
+        public void Iniciar(IReadOnlyList<Producto> productos, string queProductos)
         {
             numPorcentaje.Value = 0;
             numPorcentaje.Text = "";
-            CambiarProductos(productos);
+            CambiarProductos(productos, queProductos);
             numPorcentaje.Focus();
         }
 
         /// <summary>Cambia el grupo de productos sin perder lo que ya se cargó (por ejemplo, al filtrar la lista).</summary>
-        public void CambiarProductos(IReadOnlyList<Producto> productos)
+        public void CambiarProductos(IReadOnlyList<Producto> productos, string queProductos)
         {
             _productos = productos;
+            _queProductos = queProductos;
             ActualizarVistaPrevia();
         }
 
@@ -130,7 +133,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             colAntes.HeaderText = muestraCosto ? "Costo antes" : "Venta antes";
             colDespues.HeaderText = muestraCosto ? "Costo nuevo" : "Venta nueva";
 
-            var cantidad = $"Se aplica a {_productos.Count} productos (los que se ven en la lista).";
+            var cantidad = $"Se aplica a {Estilos.Productos(_productos.Count)}:{_queProductos}.\n" +
+                           "Para elegir otros, cambiá los filtros de arriba de la lista (nombre, categoría o proveedor).";
             if (LeerAjuste(out var error) is not { } ajuste)
             {
                 grilla.DataSource = null;
@@ -155,7 +159,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
 
             var signo = ajuste.Porcentaje > 0 ? "+" : "";
             var pregunta = $"¿Aplicar {signo}{ajuste.Porcentaje:0.##}% ({ajuste.Precios.Descripcion().ToLower()}) " +
-                           $"a {_productos.Count} productos?\n\nNo se puede deshacer automáticamente.";
+                           $"a {Estilos.Productos(_productos.Count)} ({_queProductos})?\n\nNo se puede deshacer automáticamente.";
             if (!Mensajes.Confirmar(this, pregunta))
                 return;
 

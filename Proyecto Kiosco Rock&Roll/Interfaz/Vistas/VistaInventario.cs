@@ -108,7 +108,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             {
                 CerrarPanel();
                 Cargar(Seleccionado?.Id);
-                MostrarEstado($"Se actualizaron los precios de {cantidad} productos.", Estilos.Exito);
+                MostrarEstado($"Se actualizaron los precios de {Estilos.Productos(cantidad)}.", Estilos.Exito);
             };
             ajustePrecios.Cancelado += (_, _) => CerrarPanel();
             panelPedido.Cerrado += (_, _) => CerrarPanel();
@@ -129,7 +129,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             {
                 case EditorProducto: editor.Enfocar(); break;
                 // Los productos pudieron cambiar en otra sección: se recalcula la vista previa.
-                case PanelAjustePrecios: ajustePrecios.CambiarProductos(ProductosVisibles); break;
+                case PanelAjustePrecios: ajustePrecios.CambiarProductos(ProductosVisibles, FiltrosEnPalabras()); break;
                 case null: txtBuscar.Focus(); break;
             }
         }
@@ -206,8 +206,8 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
             grilla.DataSource = visibles;
             lblEstado.Text = "";
             if (panelLateral.Contenido == ajustePrecios)
-                ajustePrecios.CambiarProductos(visibles);
-            lblResumen.Text = $"{visibles.Count} productos  ·  {visibles.Count(p => p.StockBajo)} con stock bajo";
+                ajustePrecios.CambiarProductos(visibles, FiltrosEnPalabras());
+            lblResumen.Text = $"{Estilos.Productos(visibles.Count)}  ·{visibles.Count(p => p.StockBajo)} con stock bajo";
 
             var indice = visibles.FindIndex(p => p.Id == seleccionarId);
             if (indice >= 0)
@@ -262,7 +262,22 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Vistas
                 return;
             }
             panelLateral.Mostrar(ajustePrecios);
-            ajustePrecios.Iniciar(ProductosVisibles);
+            ajustePrecios.Iniciar(ProductosVisibles, FiltrosEnPalabras());
+        }
+
+        /// <summary>Los filtros de la lista en palabras, para que quede claro a qué productos se aplica algo.</summary>
+        private string FiltrosEnPalabras()
+        {
+            var partes = new List<string>();
+            if (Elegido(cmbCategoria) != FiltroClasificacion.Todos)
+                partes.Add($"categoría {((Opcion<FiltroClasificacion>)cmbCategoria.SelectedItem!).Texto}");
+            if (Elegido(cmbProveedor) != FiltroClasificacion.Todos)
+                partes.Add($"proveedor {((Opcion<FiltroClasificacion>)cmbProveedor.SelectedItem!).Texto}");
+            if (txtBuscar.Text.Trim() != "")
+                partes.Add($"que dicen \"{txtBuscar.Text.Trim()}\"");
+            if (chkStockBajo.Checked)
+                partes.Add("solo los de stock bajo");
+            return partes.Count == 0 ? "todos los productos" : string.Join(", ", partes);
         }
 
         private void AbrirPedido()

@@ -175,6 +175,9 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz
         public static decimal ValorTipeado(this NumericUpDown campo) =>
             decimal.TryParse(campo.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out var valor) ? valor : 0;
 
+        /// <summary>"1 producto" o "3 productos".</summary>
+        public static string Productos(int cantidad) => cantidad == 1 ? "1 producto" : $"{cantidad} productos";
+
         public static Label Etiqueta(string texto, Font? fuente = null) =>
             new() { Text = texto, AutoSize = true, Font = fuente ?? Normal, Anchor = AnchorStyles.Left, Margin = new Padding(3, 8, 12, 8) };
     }

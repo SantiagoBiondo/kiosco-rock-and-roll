@@ -114,7 +114,7 @@ namespace Proyecto_Kiosco_Rock_Roll.Interfaz.Controles
             lblTelefono.Text = proveedor.Telefono == "" ? "Sin teléfono cargado" : $"Tel.: {proveedor.Telefono}";
             MostrarMensaje(_pedido.Lineas.Count == 0
                     ? "Este proveedor no tiene productos con stock bajo."
-                    : $"{_pedido.Lineas.Count} productos para reponer.",
+                    : $"{Estilos.Productos(_pedido.Lineas.Count)} para reponer.",
                 SystemColors.ControlText);
         }
 
